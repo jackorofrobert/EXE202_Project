@@ -207,6 +207,52 @@ export class FirestoreService {
     }
   }
 
+  // Admin operations
+  static async getAllUsers(): Promise<User[]> {
+    try {
+      const snapshot = await getDocs(collection(db, 'users'))
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+      })) as User[]
+    } catch (error) {
+      console.error('Error getting all users:', error)
+      return []
+    }
+  }
+
+  static async updateUserTier(userId: string, tier: 'free' | 'gold'): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        tier
+      })
+    } catch (error) {
+      console.error('Error updating user tier:', error)
+      throw error
+    }
+  }
+
+  static async deleteUser(userId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'users', userId))
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      throw error
+    }
+  }
+
+  static async updatePsychologistStatus(psychologistId: string, available: boolean): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'users', psychologistId), {
+        available
+      })
+    } catch (error) {
+      console.error('Error updating psychologist status:', error)
+      throw error
+    }
+  }
+
   // Analytics operations
   static async getAdminAnalytics(): Promise<AnalyticsData> {
     try {
@@ -236,37 +282,50 @@ export class FirestoreService {
         count: emotionsSnapshot.docs.filter(doc => doc.data().level === level).length
       }))
 
-      // Mock data for charts (you can implement real data later)
-      const userGrowth = [
-        { date: '2024-01', users: 10 },
-        { date: '2024-02', users: 15 },
-        { date: '2024-03', users: 20 },
-        { date: '2024-04', users: 25 },
-        { date: '2024-05', users: 30 },
-        { date: '2024-06', users: 35 }
-      ]
-
-      const bookingStats = [
-        { month: 'Jan', bookings: 5 },
-        { month: 'Feb', bookings: 8 },
-        { month: 'Mar', bookings: 12 },
-        { month: 'Apr', bookings: 15 },
-        { month: 'May', bookings: 18 },
-        { month: 'Jun', bookings: 22 }
-      ]
+      console.log("Real Firestore data:")
+      console.log("- Total users:", totalUsers)
+      console.log("- Active users:", activeUsers)
+      console.log("- Total psychologists:", totalPsychologists)
+      console.log("- Total bookings:", totalBookings)
+      console.log("- Emotion distribution:", emotionDistribution)
 
       return {
         totalUsers,
         activeUsers,
         totalPsychologists,
         totalBookings,
-        emotionDistribution,
-        userGrowth,
-        bookingStats
+        emotionDistribution
       }
     } catch (error) {
       console.error('Error getting admin analytics:', error)
       throw error
+    }
+  }
+
+  // Get analytics trends (for percentage calculations)
+  static async getAnalyticsTrends(): Promise<{
+    userGrowth: number
+    activeUserGrowth: number
+    psychologistGrowth: number
+    bookingGrowth: number
+  }> {
+    try {
+      // For now, return 0% growth since we don't have historical data
+      // In a real app, you would store daily/weekly snapshots and compare
+      return {
+        userGrowth: 0,
+        activeUserGrowth: 0,
+        psychologistGrowth: 0,
+        bookingGrowth: 0
+      }
+    } catch (error) {
+      console.error('Error getting analytics trends:', error)
+      return {
+        userGrowth: 0,
+        activeUserGrowth: 0,
+        psychologistGrowth: 0,
+        bookingGrowth: 0
+      }
     }
   }
 

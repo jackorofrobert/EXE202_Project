@@ -3,6 +3,15 @@ interface EmotionChartProps {
 }
 
 export default function EmotionChart({ data }: EmotionChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+        <h3 className="text-lg font-semibold mb-6">Phân bố cảm xúc</h3>
+        <div className="text-center text-muted-foreground">Không có dữ liệu</div>
+      </div>
+    )
+  }
+
   const total = data.reduce((sum, item) => sum + item.count, 0)
   const colors = ["#ef4444", "#f59e0b", "#eab308", "#10b981", "#6366f1"]
   const emotionLabels = ["Rất tệ", "Tệ", "Bình thường", "Tốt", "Rất tốt"]

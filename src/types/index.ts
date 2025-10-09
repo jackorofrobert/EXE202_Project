@@ -57,9 +57,19 @@ export interface Psychologist {
   specialization: string
   experience: number
   rating: number
+  totalRatings?: number
   avatar: string
   bio: string
   available: boolean
+}
+
+export interface Rating {
+  id: string
+  psychologistId: string
+  userId: string
+  rating: number
+  review?: string
+  createdAt: string
 }
 
 export interface AnalyticsData {
@@ -68,6 +78,4 @@ export interface AnalyticsData {
   totalPsychologists: number
   totalBookings: number
   emotionDistribution: { level: number; count: number }[]
-  userGrowth: { date: string; users: number }[]
-  bookingStats: { month: string; bookings: number }[]
 }
