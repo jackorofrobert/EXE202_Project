@@ -143,7 +143,7 @@ export default function FileUpload({
         <p className="text-sm text-red-600">{error}</p>
       )}
 
-      <Input
+      <input
         ref={fileInputRef}
         type="file"
         accept={accept}

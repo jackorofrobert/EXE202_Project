@@ -1,14 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import { Checkbox } from "../../components/ui/checkbox"
 import { FirestoreService } from "../../lib/firestore-service"
 import { useToast } from "../../hooks/use-toast"
-import { EyeIcon, CheckIcon, XIcon, ClockIcon } from "lucide-react"
+import { EyeIcon, CheckIcon, XIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import type { Transaction, TransactionStatus } from "../../types"
 
 export default function TransactionManagement() {
@@ -17,13 +19,17 @@ export default function TransactionManagement() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [adminNotes, setAdminNotes] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("pending")
+  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(10)
   const { toast } = useToast()
 
   useEffect(() => {
     loadTransactions()
   }, [])
 
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       const data = await FirestoreService.getTransactions()
       setTransactions(data)
@@ -37,7 +43,23 @@ export default function TransactionManagement() {
     } finally {
       setLoading(false)
     }
+  }, [toast])
+
+  const getFilteredTransactions = () => {
+    if (activeTab === "all") {
+      return transactions
+    }
+    return transactions.filter(t => t.status === activeTab)
   }
+
+  const getCurrentPageTransactions = () => {
+    const filtered = getFilteredTransactions()
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filtered.slice(startIndex, endIndex)
+  }
+
+  const totalPages = Math.ceil(getFilteredTransactions().length / itemsPerPage)
 
   const handleApprove = async (transaction: Transaction) => {
     setIsProcessing(true)
@@ -97,6 +119,88 @@ export default function TransactionManagement() {
     }
   }
 
+  const handleSelectTransaction = (transactionId: string) => {
+    setSelectedTransactions(prev => 
+      prev.includes(transactionId) 
+        ? prev.filter(id => id !== transactionId)
+        : [...prev, transactionId]
+    )
+  }
+
+  const handleSelectAll = () => {
+    const currentPageTransactions = getCurrentPageTransactions()
+    const allCurrentPageIds = currentPageTransactions.map(t => t.id)
+    
+    if (selectedTransactions.length === allCurrentPageIds.length) {
+      setSelectedTransactions([])
+    } else {
+      setSelectedTransactions(allCurrentPageIds)
+    }
+  }
+
+  const handleBulkApprove = async () => {
+    if (selectedTransactions.length === 0) return
+    
+    setIsProcessing(true)
+    try {
+      await Promise.all(
+        selectedTransactions.map(id => 
+          FirestoreService.updateTransactionStatus(id, "approved", adminNotes || undefined)
+        )
+      )
+      
+      toast({
+        title: "Thành công",
+        description: `Đã duyệt ${selectedTransactions.length} giao dịch`
+      })
+      
+      setSelectedTransactions([])
+      setAdminNotes("")
+      loadTransactions()
+    } catch (error) {
+      console.error("Error bulk approving transactions:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể duyệt hàng loạt",
+        variant: "destructive"
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleBulkReject = async () => {
+    if (selectedTransactions.length === 0) return
+    
+    setIsProcessing(true)
+    try {
+      await Promise.all(
+        selectedTransactions.map(id => 
+          FirestoreService.updateTransactionStatus(id, "rejected", adminNotes || undefined)
+        )
+      )
+      
+      toast({
+        title: "Thành công",
+        description: `Đã từ chối ${selectedTransactions.length} giao dịch`
+      })
+      
+      setSelectedTransactions([])
+      setAdminNotes("")
+      loadTransactions()
+    } catch (error) {
+      console.error("Error bulk rejecting transactions:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể từ chối hàng loạt",
+        variant: "destructive"
+      })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
       case "pending":
@@ -135,35 +239,129 @@ export default function TransactionManagement() {
         <p className="text-gray-600">Duyệt và quản lý các giao dịch nâng cấp</p>
       </div>
 
+      {/* Tabs and Bulk Actions */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label>Trạng thái:</Label>
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => { setActiveTab("pending"); setCurrentPage(1); setSelectedTransactions([]) }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === "pending"
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    <ClockIcon className="h-4 w-4 inline mr-1" />
+                    Chờ duyệt ({transactions.filter(t => t.status === "pending").length})
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab("approved"); setCurrentPage(1); setSelectedTransactions([]) }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === "approved"
+                        ? "bg-white text-green-600 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    <CheckIcon className="h-4 w-4 inline mr-1" />
+                    Đã duyệt ({transactions.filter(t => t.status === "approved").length})
+                  </button>
+                  <button
+                    onClick={() => { setActiveTab("rejected"); setCurrentPage(1); setSelectedTransactions([]) }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === "rejected"
+                        ? "bg-white text-red-600 shadow-sm"
+                        : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    <XIcon className="h-4 w-4 inline mr-1" />
+                    Từ chối ({transactions.filter(t => t.status === "rejected").length})
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {selectedTransactions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">
+                  Đã chọn {selectedTransactions.length} giao dịch
+                </span>
+                <Button
+                  onClick={handleBulkApprove}
+                  disabled={isProcessing}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckIcon className="h-4 w-4 mr-1" />
+                  Duyệt tất cả
+                </Button>
+                <Button
+                  onClick={handleBulkReject}
+                  disabled={isProcessing}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <XIcon className="h-4 w-4 mr-1" />
+                  Từ chối tất cả
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Transaction List */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Danh sách giao dịch</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Danh sách giao dịch ({getFilteredTransactions().length})</CardTitle>
+                {getFilteredTransactions().length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedTransactions.length === getCurrentPageTransactions().length && getCurrentPageTransactions().length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                    <Label className="text-sm">Chọn tất cả</Label>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
-              {transactions.length === 0 ? (
+              {getFilteredTransactions().length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <p>Chưa có giao dịch nào</p>
+                  <p>Không có giao dịch nào</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {transactions.map((transaction) => (
+                  {getCurrentPageTransactions().map((transaction) => (
                     <div
                       key={transaction.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                      className={`border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer ${
+                        selectedTransactions.includes(transaction.id) ? 'bg-blue-50 border-blue-300' : ''
+                      }`}
                       onClick={() => setSelectedTransaction(transaction)}
                     >
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{getTypeText(transaction.type)}</h3>
-                          <p className="text-sm text-gray-600">
-                            {transaction.amount.toLocaleString('vi-VN')} VND
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(transaction.createdAt).toLocaleString('vi-VN')}
-                          </p>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={selectedTransactions.includes(transaction.id)}
+                            onCheckedChange={() => handleSelectTransaction(transaction.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <div>
+                            <h3 className="font-semibold">{getTypeText(transaction.type)}</h3>
+                            <p className="text-sm text-gray-600">
+                              {transaction.amount.toLocaleString('vi-VN')} VND
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(transaction.createdAt).toLocaleString('vi-VN')}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           {getStatusBadge(transaction.status)}
@@ -181,6 +379,37 @@ export default function TransactionManagement() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    Hiển thị {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, getFilteredTransactions().length)} 
+                    trong tổng số {getFilteredTransactions().length} giao dịch
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeftIcon className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm">
+                      Trang {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRightIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
