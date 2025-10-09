@@ -61,6 +61,8 @@ export interface Psychologist {
   avatar: string
   bio: string
   available: boolean
+  hourlyRate?: number
+  availability?: "available" | "busy" | "offline"
 }
 
 export interface Rating {

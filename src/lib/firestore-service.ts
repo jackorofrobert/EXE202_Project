@@ -13,7 +13,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './firebase/config'
-import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, EmotionLevel, BookingStatus } from '../types'
+import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, BookingStatus } from '../types'
 
 export class FirestoreService {
   // User operations
@@ -196,14 +196,34 @@ export class FirestoreService {
     }
   }
 
-  static async updateBookingStatus(bookingId: string, status: BookingStatus): Promise<void> {
+  static async updateBookingStatus(bookingId: string, status: BookingStatus, notes?: string): Promise<void> {
     try {
-      await updateDoc(doc(db, 'bookings', bookingId), {
-        status
-      })
+      const updateData: any = { status }
+      if (notes !== undefined) {
+        updateData.notes = notes
+      }
+      await updateDoc(doc(db, 'bookings', bookingId), updateData)
     } catch (error) {
       console.error('Error updating booking status:', error)
       throw error
+    }
+  }
+
+  static async getBookingsForPsychologist(psychologistId: string): Promise<Booking[]> {
+    try {
+      const snapshot = await getDocs(query(
+        collection(db, 'bookings'),
+        where('psychologistId', '==', psychologistId)
+      ))
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+      })) as Booking[]
+    } catch (error) {
+      console.error('Error getting bookings for psychologist:', error)
+      return []
     }
   }
 
@@ -222,13 +242,14 @@ export class FirestoreService {
     }
   }
 
-  static async updateUserTier(userId: string, tier: 'free' | 'gold'): Promise<void> {
+  static async updateUser(userId: string, userData: Partial<User>): Promise<void> {
     try {
       await updateDoc(doc(db, 'users', userId), {
-        tier
+        ...userData,
+        updatedAt: serverTimestamp()
       })
     } catch (error) {
-      console.error('Error updating user tier:', error)
+      console.error('Error updating user:', error)
       throw error
     }
   }
@@ -242,13 +263,14 @@ export class FirestoreService {
     }
   }
 
-  static async updatePsychologistStatus(psychologistId: string, available: boolean): Promise<void> {
+  static async updatePsychologist(psychologistId: string, psychologistData: Partial<Psychologist>): Promise<void> {
     try {
       await updateDoc(doc(db, 'users', psychologistId), {
-        available
+        ...psychologistData,
+        updatedAt: serverTimestamp()
       })
     } catch (error) {
-      console.error('Error updating psychologist status:', error)
+      console.error('Error updating psychologist:', error)
       throw error
     }
   }
@@ -309,23 +331,13 @@ export class FirestoreService {
     psychologistGrowth: number
     bookingGrowth: number
   }> {
-    try {
-      // For now, return 0% growth since we don't have historical data
-      // In a real app, you would store daily/weekly snapshots and compare
-      return {
-        userGrowth: 0,
-        activeUserGrowth: 0,
-        psychologistGrowth: 0,
-        bookingGrowth: 0
-      }
-    } catch (error) {
-      console.error('Error getting analytics trends:', error)
-      return {
-        userGrowth: 0,
-        activeUserGrowth: 0,
-        psychologistGrowth: 0,
-        bookingGrowth: 0
-      }
+    // For now, return 0% growth since we don't have historical data
+    // In a real app, you would store daily/weekly snapshots and compare
+    return {
+      userGrowth: 0,
+      activeUserGrowth: 0,
+      psychologistGrowth: 0,
+      bookingGrowth: 0
     }
   }
 

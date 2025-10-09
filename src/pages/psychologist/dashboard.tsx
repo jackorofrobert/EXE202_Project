@@ -3,9 +3,10 @@
 import { Routes, Route, Navigate, Link, useLocation } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
 import PsychologistAppointments from "./appointments"
+import PsychologistProfile from "./profile"
 
 export default function PsychologistDashboard() {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const location = useLocation()
 
   const navItems = [
@@ -52,7 +53,7 @@ export default function PsychologistDashboard() {
         <Routes>
           <Route index element={<PsychologistAppointments />} />
           <Route path="chat" element={<div>Tin nhắn - Coming soon</div>} />
-          <Route path="profile" element={<div>Hồ sơ - Coming soon</div>} />
+          <Route path="profile" element={<PsychologistProfile />} />
           <Route path="*" element={<Navigate to="/psychologist" replace />} />
         </Routes>
       </main>

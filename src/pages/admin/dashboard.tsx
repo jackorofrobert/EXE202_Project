@@ -7,6 +7,8 @@ import StatsCard from "../../components/admin/stats-card"
 import EmotionChart from "../../components/admin/emotion-chart"
 import UserGrowthChart from "../../components/admin/user-growth-chart"
 import BookingStatsChart from "../../components/admin/booking-stats-chart"
+import UserModal from "../../components/admin/user-modal"
+import PsychologistModal from "../../components/admin/psychologist-modal"
 import type { AnalyticsData, User, Psychologist } from "../../types"
 
 export default function AdminDashboard() {
@@ -22,6 +24,12 @@ export default function AdminDashboard() {
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists'>('overview')
+  
+  // Modal states
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [isPsychologistModalOpen, setIsPsychologistModalOpen] = useState(false)
+  const [selectedPsychologist, setSelectedPsychologist] = useState<Psychologist | null>(null)
 
   useEffect(() => {
     loadData()
@@ -127,6 +135,31 @@ export default function AdminDashboard() {
   console.log("Booking stats data:", bookingStatsData)
   console.log("Emotion distribution:", analytics?.emotionDistribution)
 
+  // Modal handlers
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user)
+    setIsUserModalOpen(true)
+  }
+
+  const handleAddUser = () => {
+    setSelectedUser(null)
+    setIsUserModalOpen(true)
+  }
+
+  const handleEditPsychologist = (psychologist: Psychologist) => {
+    setSelectedPsychologist(psychologist)
+    setIsPsychologistModalOpen(true)
+  }
+
+  const handleAddPsychologist = () => {
+    setSelectedPsychologist(null)
+    setIsPsychologistModalOpen(true)
+  }
+
+  const handleModalSuccess = () => {
+    loadData() // Reload data after successful operation
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border">
@@ -224,7 +257,10 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">Quản lý Users</h2>
               <div className="flex gap-2">
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90">
+                <button 
+                  onClick={handleAddUser}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+                >
                   Thêm User
                 </button>
                 <button className="px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:opacity-90">
@@ -293,10 +329,16 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex gap-2">
-                            <button className="text-primary hover:text-primary/80">
+                            <button 
+                              onClick={() => handleEditUser(user)}
+                              className="text-primary hover:text-primary/80"
+                            >
                               Edit
                             </button>
-                            <button className="text-destructive hover:text-destructive/80">
+                            <button 
+                              onClick={() => handleEditUser(user)}
+                              className="text-destructive hover:text-destructive/80"
+                            >
                               Delete
                             </button>
                           </div>
@@ -315,7 +357,10 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold">Quản lý Bác sĩ tâm lý</h2>
               <div className="flex gap-2">
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90">
+                <button 
+                  onClick={handleAddPsychologist}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+                >
                   Thêm Bác sĩ
                 </button>
                 <button className="px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:opacity-90">
@@ -385,10 +430,16 @@ export default function AdminDashboard() {
                     
                     <div className="pt-3 border-t border-border">
                       <div className="flex gap-2">
-                        <button className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90">
+                        <button 
+                          onClick={() => handleEditPsychologist(psychologist)}
+                          className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90"
+                        >
                           Xem chi tiết
                         </button>
-                        <button className="flex-1 px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm hover:opacity-90">
+                        <button 
+                          onClick={() => handleEditPsychologist(psychologist)}
+                          className="flex-1 px-3 py-2 bg-muted text-muted-foreground rounded-lg text-sm hover:opacity-90"
+                        >
                           Chỉnh sửa
                         </button>
                       </div>
@@ -400,6 +451,21 @@ export default function AdminDashboard() {
         </div>
         )}
       </main>
+
+      {/* Modals */}
+      <UserModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        user={selectedUser}
+        onSuccess={handleModalSuccess}
+      />
+      
+      <PsychologistModal
+        isOpen={isPsychologistModalOpen}
+        onClose={() => setIsPsychologistModalOpen(false)}
+        psychologist={selectedPsychologist}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   )
 }

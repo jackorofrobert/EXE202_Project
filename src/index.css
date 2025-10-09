@@ -34,3 +34,26 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+@layer utilities {
+  /* Ensure proper z-index stacking for modals and dropdowns */
+  .z-modal {
+    z-index: 10000 !important;
+  }
+  .z-dropdown {
+    z-index: 9999 !important;
+  }
+  .z-overlay {
+    z-index: 9999 !important;
+  }
+}
+
+/* Fix dropdown positioning issues */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+[data-radix-select-content] {
+  z-index: 9999 !important;
+  position: relative !important;
+}

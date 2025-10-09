@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../contexts/auth-context";
 import { FirestoreService } from "../../lib/firestore-service";
 import type { DiaryEntry } from "../../types";
@@ -14,11 +14,7 @@ export default function DiaryPage() {
   const [mood, setMood] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    loadDiaryEntries();
-  }, [user?.id]);
-
-  const loadDiaryEntries = async () => {
+  const loadDiaryEntries = useCallback(async () => {
     if (!user?.id) return;
     
     setIsLoading(true);
@@ -30,7 +26,11 @@ export default function DiaryPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadDiaryEntries();
+  }, [loadDiaryEntries]);
 
   const handleSave = async () => {
     if (!title.trim() || !content.trim() || !user?.id) return;

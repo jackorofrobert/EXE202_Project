@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service";
 import type { Psychologist, Booking } from "../../types"
@@ -13,26 +13,17 @@ export default function BookingPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedPsychologist, setSelectedPsychologist] = useState<Psychologist | null>(null)
   const [showBookingModal, setShowBookingModal] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    loadPsychologists()
-    loadBookings()
-  }, [user?.id])
-
-  const loadPsychologists = async () => {
-    setIsLoading(true)
+  const loadPsychologists = useCallback(async () => {
     try {
       const psychologistsData = await FirestoreService.getPsychologists()
       setPsychologists(psychologistsData)
     } catch (error) {
       console.error("Error loading psychologists:", error)
-    } finally {
-      setIsLoading(false)
     }
-  }
+  }, [])
 
-  const loadBookings = async () => {
+  const loadBookings = useCallback(async () => {
     if (!user?.id) return
     
     try {
@@ -41,7 +32,12 @@ export default function BookingPage() {
     } catch (error) {
       console.error("Error loading bookings:", error)
     }
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    loadPsychologists()
+    loadBookings()
+  }, [loadPsychologists, loadBookings])
 
   const handleBookClick = (psychologist: Psychologist) => {
     setSelectedPsychologist(psychologist)
@@ -51,7 +47,6 @@ export default function BookingPage() {
   const handleBookingConfirm = async (date: string, time: string, notes: string) => {
     if (!user?.id || !selectedPsychologist?.id) return
 
-    setIsLoading(true)
     try {
       const bookingId = await FirestoreService.addBooking({
         userId: user.id,
@@ -79,8 +74,6 @@ export default function BookingPage() {
     } catch (error) {
       console.error("Error creating booking:", error)
       alert("Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại.")
-    } finally {
-      setIsLoading(false)
     }
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/auth-context";
 import { FirestoreService } from "../../lib/firestore-service";
@@ -21,43 +21,8 @@ function DashboardHome() {
   const [emotions, setEmotions] = useState<EmotionEntry[]>([]);
   const [allEmotions, setAllEmotions] = useState<EmotionEntry[]>([]);
   const [showEmotionCheck, setShowEmotionCheck] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    loadEmotions();
-  }, [user?.id]);
-
-  const loadEmotions = async () => {
-    if (!user?.id) {
-      console.log("No user ID available");
-      return;
-    }
-    
-    console.log("Loading emotions for user:", user.id);
-    setIsLoading(true);
-    try {
-      // Load tất cả emotions để check chính xác
-      const allEmotionEntries = await FirestoreService.getEmotionEntries(user.id);
-      console.log("Loaded emotions:", allEmotionEntries);
-      setAllEmotions(allEmotionEntries);
-      
-      // Chỉ hiển thị 10 entries gần nhất trên dashboard
-      const recentEmotions = allEmotionEntries.slice(0, 10);
-      setEmotions(recentEmotions);
-      
-      // Check emotion sau khi đã load xong
-      checkLastEmotionCheck(allEmotionEntries);
-    } catch (error) {
-      console.error("Error loading emotions:", error);
-      // Fallback: set empty arrays
-      setAllEmotions([]);
-      setEmotions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const checkLastEmotionCheck = (emotionsToCheck?: EmotionEntry[]) => {
+  const checkLastEmotionCheck = useCallback((emotionsToCheck?: EmotionEntry[]) => {
     if (!user?.id) return;
     
     try {
@@ -74,7 +39,35 @@ function DashboardHome() {
     } catch (error) {
       console.error("Error checking last emotion check:", error);
     }
-  };
+  }, [user?.id, allEmotions]);
+
+  const loadEmotions = useCallback(async () => {
+    if (!user?.id) {
+      console.log("No user ID available");
+      return;
+    }
+    
+    console.log("Loading emotions for user:", user.id);
+    try {
+      // Load tất cả emotions để check chính xác
+      const allEmotionEntries = await FirestoreService.getEmotionEntries(user.id);
+      console.log("Loaded emotions:", allEmotionEntries);
+      setAllEmotions(allEmotionEntries);
+      
+      // Chỉ hiển thị 10 entries gần nhất trên dashboard
+      const recentEmotions = allEmotionEntries.slice(0, 10);
+      setEmotions(recentEmotions);
+      
+      // Check emotion sau khi đã load xong
+      checkLastEmotionCheck(allEmotionEntries);
+    } catch (error) {
+      console.error("Error loading emotions:", error);
+    }
+  }, [user?.id, checkLastEmotionCheck]);
+
+  useEffect(() => {
+    loadEmotions();
+  }, [loadEmotions]);
 
   const handleEmotionSubmit = async (level: EmotionLevel, note: string) => {
     if (!user?.id) return;
@@ -90,7 +83,6 @@ function DashboardHome() {
       return;
     }
 
-    setIsLoading(true);
     try {
       const entryId = await FirestoreService.addEmotionEntry(user.id, {
         level,
@@ -111,8 +103,6 @@ function DashboardHome() {
     } catch (error) {
       console.error("Error saving emotion entry:", error);
       alert("Có lỗi xảy ra khi lưu cảm xúc. Vui lòng thử lại.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
