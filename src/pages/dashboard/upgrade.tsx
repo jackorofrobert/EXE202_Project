@@ -10,16 +10,8 @@ export default function UpgradePage() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleUpgrade = async () => {
-    setIsProcessing(true);
-
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // In a real app, this would call a payment API
-    // For now, we'll just show success
-    alert("Nâng cấp thành công! Vui lòng đăng nhập lại để cập nhật tài khoản.");
-    setIsProcessing(false);
-    navigate("/dashboard");
+    // Navigate to payment page
+    navigate("/dashboard/payment");
   };
 
   if (user?.tier === "gold") {

@@ -14,6 +14,7 @@ import ChatbotPage from "./chatbot";
 import BookingPage from "./booking";
 import DiaryPage from "./diary";
 import UpgradePage from "./upgrade";
+import PaymentPage from "./payment";
 
 function DashboardHome() {
   const { user } = useAuth();
@@ -243,6 +244,7 @@ export default function UserDashboard() {
           <Route index element={<DashboardHome />} />
           <Route path="diary" element={<DiaryPage />} />
           <Route path="upgrade" element={<UpgradePage />} />
+          <Route path="payment" element={<PaymentPage />} />
           <Route path="chatbot" element={<ChatbotPage />} />
           <Route path="booking" element={<BookingPage />} />
           <Route path="profile" element={<div>Thông tin - Coming soon</div>} />

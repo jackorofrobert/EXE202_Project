@@ -9,6 +9,7 @@ import UserGrowthChart from "../../components/admin/user-growth-chart"
 import BookingStatsChart from "../../components/admin/booking-stats-chart"
 import UserModal from "../../components/admin/user-modal"
 import PsychologistModal from "../../components/admin/psychologist-modal"
+import TransactionManagement from "../../components/admin/transaction-management"
 import type { AnalyticsData, User, Psychologist } from "../../types"
 
 export default function AdminDashboard() {
@@ -23,7 +24,7 @@ export default function AdminDashboard() {
     bookingGrowth: number
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists' | 'transactions'>('overview')
   
   // Modal states
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
@@ -209,6 +210,16 @@ export default function AdminDashboard() {
             }`}
           >
             Bác sĩ tâm lý ({psychologists.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('transactions')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'transactions'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Giao dịch
           </button>
         </div>
 
@@ -449,6 +460,10 @@ export default function AdminDashboard() {
               ))}
             </div>
         </div>
+        )}
+
+        {activeTab === 'transactions' && (
+          <TransactionManagement />
         )}
       </main>
 

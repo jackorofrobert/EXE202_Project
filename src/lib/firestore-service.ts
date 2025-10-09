@@ -13,7 +13,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './firebase/config'
-import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, BookingStatus } from '../types'
+import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, BookingStatus, Transaction, TransactionStatus, ChatMessage } from '../types'
 
 export class FirestoreService {
   // User operations
@@ -375,13 +375,86 @@ export class FirestoreService {
       return []
     }
   }
-}
 
-// Add ChatMessage type
-interface ChatMessage {
-  id: string
-  senderId: string
-  content: string
-  type: 'user' | 'bot'
-  createdAt: Date
+  // Transaction methods
+  static async createTransaction(transactionData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    try {
+      const now = new Date().toISOString()
+      const transactionRef = await addDoc(collection(db, 'transactions'), {
+        ...transactionData,
+        createdAt: now,
+        updatedAt: now
+      })
+      return transactionRef.id
+    } catch (error) {
+      console.error('Error creating transaction:', error)
+      throw error
+    }
+  }
+
+  static async getTransactions(status?: TransactionStatus): Promise<Transaction[]> {
+    try {
+      let q = query(collection(db, 'transactions'), orderBy('createdAt', 'desc'))
+      
+      if (status) {
+        q = query(collection(db, 'transactions'), where('status', '==', status), orderBy('createdAt', 'desc'))
+      }
+
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Transaction))
+    } catch (error) {
+      console.error('Error getting transactions:', error)
+      throw error
+    }
+  }
+
+  static async getUserTransactions(userId: string): Promise<Transaction[]> {
+    try {
+      const q = query(
+        collection(db, 'transactions'), 
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      )
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Transaction))
+    } catch (error) {
+      console.error('Error getting user transactions:', error)
+      throw error
+    }
+  }
+
+  static async updateTransactionStatus(transactionId: string, status: TransactionStatus, adminNotes?: string): Promise<void> {
+    try {
+      const transactionRef = doc(db, 'transactions', transactionId)
+      const updateData: any = {
+        status,
+        updatedAt: new Date().toISOString()
+      }
+      
+      if (adminNotes) {
+        updateData.adminNotes = adminNotes
+      }
+
+      await updateDoc(transactionRef, updateData)
+
+      // If approved, upgrade user to gold
+      if (status === 'approved') {
+        const transactionDoc = await getDoc(transactionRef)
+        const transactionData = transactionDoc.data() as Transaction
+        
+        if (transactionData.type === 'upgrade_to_gold') {
+          await this.updateUser(transactionData.userId, { tier: 'gold' })
+        }
+      }
+    } catch (error) {
+      console.error('Error updating transaction status:', error)
+      throw error
+    }
+  }
 }

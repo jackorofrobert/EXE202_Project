@@ -74,6 +74,21 @@ export interface Rating {
   createdAt: string
 }
 
+export type TransactionStatus = "pending" | "approved" | "rejected"
+export type TransactionType = "upgrade_to_gold"
+
+export interface Transaction {
+  id: string
+  userId: string
+  type: TransactionType
+  amount: number
+  status: TransactionStatus
+  paymentProof?: string
+  adminNotes?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface AnalyticsData {
   totalUsers: number
   activeUsers: number
