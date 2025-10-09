@@ -1,24 +1,17 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { DatabaseService } from "@/lib/db-service"
+import { FirestoreService } from "@/lib/firestore-service"
 import type { EmotionStats } from "@/types"
 
 export async function GET() {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const currentUser = await DatabaseService.getCurrentUser()
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data, error } = await supabase.from("emotion_entries").select("level").eq("user_id", user.id)
-
-    if (error) {
-      console.error("[v0] Error fetching emotion stats:", error)
-      return NextResponse.json({ error: "Failed to fetch emotion stats" }, { status: 500 })
-    }
+    const entries = await FirestoreService.getEmotionEntries(currentUser.id)
 
     const stats: EmotionStats = {
       level1: 0,
@@ -28,7 +21,7 @@ export async function GET() {
       level5: 0,
     }
 
-    data.forEach((entry) => {
+    entries.forEach((entry) => {
       const key = `level${entry.level}` as keyof EmotionStats
       stats[key]++
     })

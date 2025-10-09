@@ -1,70 +1,40 @@
-import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { DatabaseService } from "@/lib/db-service"
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
-        },
-      },
-    },
-  )
-
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Get current user from Firebase Auth
+  const currentUser = await DatabaseService.getCurrentUser()
 
   // Protect admin routes
   if (request.nextUrl.pathname.startsWith("/admin")) {
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.redirect(new URL("/login", request.url))
     }
 
-    // Check if user is admin
-    const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
-
-    if (userData?.role !== "admin") {
+    if (currentUser.role !== "admin") {
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
   }
 
   // Protect psychologist routes
   if (request.nextUrl.pathname.startsWith("/psychologist")) {
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.redirect(new URL("/login", request.url))
     }
 
-    const { data: userData } = await supabase.from("users").select("role").eq("id", user.id).single()
-
-    if (userData?.role !== "psychologist") {
+    if (currentUser.role !== "psychologist") {
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
   }
 
   // Protect dashboard routes
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.redirect(new URL("/login", request.url))
     }
   }
 
-  return supabaseResponse
+  return NextResponse.next()
 }
 
 export const config = {

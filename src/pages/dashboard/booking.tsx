@@ -1,38 +1,87 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../../contexts/auth-context"
+import { FirestoreService } from "../../lib/firestore-service";
 import type { Psychologist, Booking } from "../../types"
-import { mockPsychologists } from "../../lib/mock-data"
 import PsychologistCard from "../../components/booking/psychologist-card"
 import BookingModal from "../../components/booking/booking-modal"
 
 export default function BookingPage() {
   const { user } = useAuth()
-  const [psychologists] = useState<Psychologist[]>(mockPsychologists)
+  const [psychologists, setPsychologists] = useState<Psychologist[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedPsychologist, setSelectedPsychologist] = useState<Psychologist | null>(null)
   const [showBookingModal, setShowBookingModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    loadPsychologists()
+    loadBookings()
+  }, [user?.id])
+
+  const loadPsychologists = async () => {
+    setIsLoading(true)
+    try {
+      const psychologistsData = await FirestoreService.getPsychologists()
+      setPsychologists(psychologistsData)
+    } catch (error) {
+      console.error("Error loading psychologists:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const loadBookings = async () => {
+    if (!user?.id) return
+    
+    try {
+      const bookingsData = await FirestoreService.getBookings(user.id, 'user')
+      setBookings(bookingsData)
+    } catch (error) {
+      console.error("Error loading bookings:", error)
+    }
+  }
 
   const handleBookClick = (psychologist: Psychologist) => {
     setSelectedPsychologist(psychologist)
     setShowBookingModal(true)
   }
 
-  const handleBookingConfirm = (date: string, time: string, notes: string) => {
-    const newBooking: Booking = {
-      id: Date.now().toString(),
-      userId: user?.id || "",
-      psychologistId: selectedPsychologist?.id || "",
-      date,
-      time,
-      status: "pending",
-      notes,
-      createdAt: new Date().toISOString(),
+  const handleBookingConfirm = async (date: string, time: string, notes: string) => {
+    if (!user?.id || !selectedPsychologist?.id) return
+
+    setIsLoading(true)
+    try {
+      const bookingId = await FirestoreService.addBooking({
+        userId: user.id,
+        psychologistId: selectedPsychologist.id,
+        date,
+        time,
+        status: "pending",
+        notes,
+      })
+
+      const newBooking: Booking = {
+        id: bookingId,
+        userId: user.id,
+        psychologistId: selectedPsychologist.id,
+        date,
+        time,
+        status: "pending",
+        notes,
+        createdAt: new Date().toISOString(),
+      }
+
+      setBookings([newBooking, ...bookings])
+      setShowBookingModal(false)
+      alert("Đặt lịch thành công! Bác sĩ sẽ xác nhận trong thời gian sớm nhất.")
+    } catch (error) {
+      console.error("Error creating booking:", error)
+      alert("Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại.")
+    } finally {
+      setIsLoading(false)
     }
-    setBookings([...bookings, newBooking])
-    setShowBookingModal(false)
-    alert("Đặt lịch thành công! Bác sĩ sẽ xác nhận trong thời gian sớm nhất.")
   }
 
   return (

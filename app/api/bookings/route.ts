@@ -1,61 +1,43 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { DatabaseService } from "@/lib/db-service"
+import { FirestoreService } from "@/lib/firestore-service"
 import type { Booking } from "@/types"
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const currentUser = await DatabaseService.getCurrentUser()
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
-    const { psychologistId, date, time, note } = body
+    const { psychologistId, date, time, notes } = body
 
     // Get psychologist info
-    const { data: psychologist, error: psychologistError } = await supabase
-      .from("users")
-      .select("name, email")
-      .eq("id", psychologistId)
-      .single()
-
-    if (psychologistError) {
+    const psychologist = await FirestoreService.getUser(psychologistId)
+    if (!psychologist) {
       return NextResponse.json({ error: "Psychologist not found" }, { status: 404 })
     }
 
-    const { data, error } = await supabase
-      .from("bookings")
-      .insert({
-        user_id: user.id,
-        psychologist_id: psychologistId,
-        date,
-        time,
-        note,
-        status: "pending",
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error("[v0] Error creating booking:", error)
-      return NextResponse.json({ error: "Failed to create booking" }, { status: 500 })
-    }
+    const bookingId = await FirestoreService.addBooking({
+      userId: currentUser.id,
+      psychologistId,
+      date,
+      time,
+      status: "pending",
+      notes,
+    })
 
     const booking: Booking = {
-      id: data.id,
-      userId: data.user_id,
-      psychologistId: data.psychologist_id,
-      psychologistName: psychologist.name,
-      psychologistTitle: "Bác sĩ tâm lý",
-      date: new Date(data.date),
-      time: data.time,
-      status: data.status,
-      note: data.note,
-      createdAt: new Date(data.created_at),
+      id: bookingId,
+      userId: currentUser.id,
+      psychologistId,
+      date,
+      time,
+      status: "pending",
+      notes,
+      createdAt: new Date().toISOString(),
     }
 
     return NextResponse.json(booking)

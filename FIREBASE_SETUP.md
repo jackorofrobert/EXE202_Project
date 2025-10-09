@@ -1,198 +1,183 @@
 # Firebase Setup Guide
 
-## Bước 1: Tạo Firebase Project
+## Environment Variables
 
-1. Truy cập [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add project" hoặc "Thêm dự án"
-3. Nhập tên project: `emocare-mental-health`
-4. Tắt Google Analytics (không bắt buộc)
-5. Click "Create project"
+Tạo file `.env.local` trong root directory với các biến sau:
 
-## Bước 2: Đăng ký Web App
+```env
+# Firebase Configuration
+REACT_APP_FIREBASE_API_KEY=your_api_key_here
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+```
 
-1. Trong Firebase Console, click vào biểu tượng Web `</>`
-2. Nhập tên app: `EmoCare Web`
-3. Click "Register app"
-4. Copy các thông tin Firebase config
+## Firebase Project Setup
 
-## Bước 3: Cấu hình Environment Variables
+1. **Tạo Firebase Project**:
+   - Vào [Firebase Console](https://console.firebase.google.com/)
+   - Tạo project mới hoặc chọn project hiện có
+   - Enable Authentication và Firestore Database
 
-1. Tạo file `.env` trong thư mục root của project
-2. Copy nội dung từ `.env.example`
-3. Điền các giá trị từ Firebase config vào file `.env`:
+2. **Authentication Setup**:
+   - Vào Authentication > Sign-in method
+   - Enable Email/Password provider
+   - (Optional) Enable Google, Facebook, etc.
 
-\`\`\`env
-VITE_FIREBASE_API_KEY=AIzaSy...
-VITE_FIREBASE_AUTH_DOMAIN=emocare-xxxxx.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=emocare-xxxxx
-VITE_FIREBASE_STORAGE_BUCKET=emocare-xxxxx.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789
-VITE_FIREBASE_APP_ID=1:123456789:web:xxxxx
-\`\`\`
+3. **Firestore Database Setup**:
+   - Vào Firestore Database
+   - Tạo database (chọn production mode)
+   - Thiết lập security rules:
 
-## Bước 4: Kích hoạt Firebase Authentication
-
-1. Trong Firebase Console, vào **Authentication**
-2. Click "Get started"
-3. Chọn tab "Sign-in method"
-4. Enable **Email/Password**
-5. Click "Save"
-
-## Bước 5: Tạo Firestore Database
-
-1. Trong Firebase Console, vào **Firestore Database**
-2. Click "Create database"
-3. Chọn **Start in test mode** (cho development)
-4. Chọn location gần nhất (ví dụ: `asia-southeast1`)
-5. Click "Enable"
-
-## Bước 6: Cấu hình Firestore Security Rules
-
-Vào tab **Rules** trong Firestore và thay thế bằng rules sau:
-
-\`\`\`javascript
+```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users collection
+    // Users can read/write their own data
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Emotions collection
-    match /emotions/{emotionId} {
+    // Emotion entries - users can only access their own
+    match /emotion_entries/{entryId} {
       allow read, write: if request.auth != null && 
         resource.data.userId == request.auth.uid;
     }
     
-    // Diary entries collection
-    match /diary/{diaryId} {
+    // Diary entries - users can only access their own
+    match /diary_entries/{entryId} {
       allow read, write: if request.auth != null && 
         resource.data.userId == request.auth.uid;
     }
     
-    // Bookings collection
+    // Bookings - users can access their own bookings
     match /bookings/{bookingId} {
-      allow read: if request.auth != null && 
-        (resource.data.userId == request.auth.uid || 
-         resource.data.psychologistId == request.auth.uid);
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && 
+      allow read, write: if request.auth != null && 
         (resource.data.userId == request.auth.uid || 
          resource.data.psychologistId == request.auth.uid);
     }
     
-    // Chat messages collection
-    match /messages/{messageId} {
-      allow read: if request.auth != null && 
-        (resource.data.senderId == request.auth.uid || 
-         resource.data.receiverId == request.auth.uid);
-      allow create: if request.auth != null;
-    }
-    
-    // Psychologists collection (public read)
+    // Psychologists - public read access
     match /psychologists/{psychologistId} {
       allow read: if true;
       allow write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+        request.auth.uid == psychologistId;
+    }
+    
+    // Chat messages - users can access their conversations
+    match /chat_messages/{messageId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.senderId == request.auth.uid || 
+         resource.data.receiverId == request.auth.uid);
     }
   }
 }
-\`\`\`
+```
 
-## Bước 7: Cài đặt Dependencies
+## Firestore Collections Structure
 
-\`\`\`bash
-npm install
-\`\`\`
-
-## Bước 8: Chạy Development Server
-
-\`\`\`bash
-npm run dev
-\`\`\`
-
-## Cấu trúc Firestore Collections
-
-### users
-\`\`\`
-{
-  id: string (auto-generated)
-  email: string
-  name: string
-  role: "user" | "admin" | "psychologist"
-  tier: "free" | "gold"
-  createdAt: string
-}
-\`\`\`
-
-### emotions
-\`\`\`
-{
-  id: string (auto-generated)
-  userId: string
-  level: number (1-5)
-  note?: string
+### Users Collection
+```javascript
+users/{userId} {
+  id: string,
+  email: string,
+  name: string,
+  role: "admin" | "user" | "psychologist",
+  tier?: "free" | "gold",
+  avatar?: string,
   createdAt: timestamp
 }
-\`\`\`
+```
 
-### diary
-\`\`\`
-{
-  id: string (auto-generated)
-  userId: string
-  title: string
-  content: string
-  mood: string
+### Emotion Entries Collection
+```javascript
+emotion_entries/{entryId} {
+  id: string,
+  userId: string,
+  level: 1 | 2 | 3 | 4 | 5,
+  note?: string,
   createdAt: timestamp
 }
-\`\`\`
+```
 
-### bookings
-\`\`\`
-{
-  id: string (auto-generated)
-  userId: string
-  psychologistId: string
-  date: string
-  time: string
-  status: "pending" | "confirmed" | "cancelled" | "completed"
-  notes?: string
+### Diary Entries Collection
+```javascript
+diary_entries/{entryId} {
+  id: string,
+  userId: string,
+  title: string,
+  content: string,
+  mood: 1 | 2 | 3 | 4 | 5,
   createdAt: timestamp
 }
-\`\`\`
+```
 
-### messages
-\`\`\`
-{
-  id: string (auto-generated)
-  senderId: string
-  receiverId: string
-  content: string
+### Bookings Collection
+```javascript
+bookings/{bookingId} {
+  id: string,
+  userId: string,
+  psychologistId: string,
+  date: string,
+  time: string,
+  status: "pending" | "confirmed" | "completed" | "cancelled",
+  notes?: string,
   createdAt: timestamp
+}
+```
+
+### Psychologists Collection
+```javascript
+psychologists/{psychologistId} {
+  id: string,
+  name: string,
+  email: string,
+  specialization: string,
+  experience: number,
+  rating: number,
+  avatar: string,
+  bio: string,
+  available: boolean
+}
+```
+
+### Chat Messages Collection
+```javascript
+chat_messages/{messageId} {
+  id: string,
+  conversationId: string,
+  senderId: string,
+  receiverId: string,
+  message: string,
+  type: "user" | "bot" | "psychologist",
+  createdAt: timestamp,
   read: boolean
 }
-\`\`\`
+```
 
-### psychologists
-\`\`\`
-{
-  id: string (auto-generated)
-  name: string
-  specialty: string
-  experience: number
-  rating: number
-  avatar: string
-  bio: string
-  price: number
-}
-\`\`\`
+## Testing
 
-## Lưu ý bảo mật
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-- **KHÔNG** commit file `.env` vào Git
-- File `.env` đã được thêm vào `.gitignore`
-- Khi deploy production, thay đổi Firestore rules từ test mode sang production mode
-- Sử dụng Firebase App Check để bảo vệ backend resources
+2. **Start development server**:
+   ```bash
+   npm start
+   ```
+
+3. **Test authentication**:
+   - Register a new user
+   - Login with existing user
+   - Test role-based access
+
+## Migration Notes
+
+- Đã loại bỏ hoàn toàn Supabase dependencies
+- Tất cả database operations giờ sử dụng Firestore
+- Authentication chỉ sử dụng Firebase Auth
+- Không cần SQL migrations vì Firestore là NoSQL
+- Data structure đã được tối ưu cho Firestore

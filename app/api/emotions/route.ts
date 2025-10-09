@@ -1,42 +1,30 @@
 import { NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
+import { DatabaseService } from "@/lib/db-service"
+import { FirestoreService } from "@/lib/firestore-service"
 import type { EmotionEntry } from "@/types"
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const currentUser = await DatabaseService.getCurrentUser()
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await request.json()
     const { level, note } = body
 
-    const { data, error } = await supabase
-      .from("emotion_entries")
-      .insert({
-        user_id: user.id,
-        level,
-        note,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error("[v0] Error creating emotion entry:", error)
-      return NextResponse.json({ error: "Failed to create emotion entry" }, { status: 500 })
-    }
+    const entryId = await FirestoreService.addEmotionEntry(currentUser.id, {
+      level,
+      note,
+    })
 
     const entry: EmotionEntry = {
-      id: data.id,
-      userId: data.user_id,
-      level: data.level,
-      note: data.note,
-      createdAt: new Date(data.created_at),
+      id: entryId,
+      userId: currentUser.id,
+      level,
+      note,
+      createdAt: new Date().toISOString(),
     }
 
     return NextResponse.json(entry)
@@ -48,42 +36,19 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const currentUser = await DatabaseService.getCurrentUser()
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const limit = searchParams.get("limit")
 
-    let query = supabase
-      .from("emotion_entries")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-
-    if (limit) {
-      query = query.limit(Number.parseInt(limit))
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error("[v0] Error fetching emotion entries:", error)
-      return NextResponse.json({ error: "Failed to fetch emotion entries" }, { status: 500 })
-    }
-
-    const entries: EmotionEntry[] = data.map((item) => ({
-      id: item.id,
-      userId: item.user_id,
-      level: item.level,
-      note: item.note,
-      createdAt: new Date(item.created_at),
-    }))
+    const entries = await FirestoreService.getEmotionEntries(
+      currentUser.id,
+      limit ? Number.parseInt(limit) : undefined
+    )
 
     return NextResponse.json(entries)
   } catch (error) {

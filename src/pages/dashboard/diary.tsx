@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/auth-context";
+import { FirestoreService } from "../../lib/firestore-service";
 import type { DiaryEntry } from "../../types";
 
 export default function DiaryPage() {
@@ -11,42 +12,74 @@ export default function DiaryPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [mood, setMood] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Load diary entries from localStorage
-    const saved = localStorage.getItem(`diary_${user?.id}`);
-    if (saved) {
-      setEntries(JSON.parse(saved));
-    }
+    loadDiaryEntries();
   }, [user?.id]);
 
-  const handleSave = () => {
-    if (!title.trim() || !content.trim()) return;
-
-    const newEntry: DiaryEntry = {
-      id: Date.now().toString(),
-      userId: user?.id || "",
-      title,
-      content,
-      mood,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updated = [newEntry, ...entries];
-    setEntries(updated);
-    localStorage.setItem(`diary_${user?.id}`, JSON.stringify(updated));
-
-    // Reset form
-    setTitle("");
-    setContent("");
-    setMood(3);
-    setIsWriting(false);
+  const loadDiaryEntries = async () => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    try {
+      const diaryEntries = await FirestoreService.getDiaryEntries(user.id);
+      setEntries(diaryEntries);
+    } catch (error) {
+      console.error("Error loading diary entries:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    const updated = entries.filter((e) => e.id !== id);
-    setEntries(updated);
-    localStorage.setItem(`diary_${user?.id}`, JSON.stringify(updated));
+  const handleSave = async () => {
+    if (!title.trim() || !content.trim() || !user?.id) return;
+
+    setIsLoading(true);
+    try {
+      const entryId = await FirestoreService.addDiaryEntry(user.id, {
+        title: title.trim(),
+        content: content.trim(),
+        mood,
+      });
+
+      const newEntry: DiaryEntry = {
+        id: entryId,
+        userId: user.id,
+        title: title.trim(),
+        content: content.trim(),
+        mood,
+        createdAt: new Date().toISOString(),
+      };
+
+      setEntries([newEntry, ...entries]);
+
+      // Reset form
+      setTitle("");
+      setContent("");
+      setMood(3);
+      setIsWriting(false);
+    } catch (error) {
+      console.error("Error saving diary entry:", error);
+      alert("Có lỗi xảy ra khi lưu nhật ký. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa nhật ký này?")) return;
+
+    setIsLoading(true);
+    try {
+      await FirestoreService.deleteDiaryEntry(id);
+      setEntries(entries.filter((e) => e.id !== id));
+    } catch (error) {
+      console.error("Error deleting diary entry:", error);
+      alert("Có lỗi xảy ra khi xóa nhật ký. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const moodEmojis = {
@@ -65,6 +98,20 @@ export default function DiaryPage() {
     5: "Rất tốt",
   };
 
+  if (isLoading && entries.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">Nhật ký của tôi</h2>
+          <p className="text-muted-foreground">Đang tải...</p>
+        </div>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -77,7 +124,8 @@ export default function DiaryPage() {
         {!isWriting && (
           <button
             onClick={() => setIsWriting(true)}
-            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+            disabled={isLoading}
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             Viết nhật ký mới
           </button>
@@ -94,6 +142,7 @@ export default function DiaryPage() {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nhập tiêu đề..."
               className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={isLoading}
             />
           </div>
 
@@ -106,7 +155,8 @@ export default function DiaryPage() {
                 <button
                   key={level}
                   onClick={() => setMood(level)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all ${
+                  disabled={isLoading}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all disabled:opacity-50 ${
                     mood === level
                       ? "border-primary bg-primary/10"
                       : "border-border hover:border-primary/50"
@@ -127,16 +177,17 @@ export default function DiaryPage() {
               placeholder="Viết về ngày hôm nay của bạn..."
               rows={8}
               className="w-full px-4 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              disabled={isLoading}
             />
           </div>
 
           <div className="flex gap-3">
             <button
               onClick={handleSave}
-              disabled={!title.trim() || !content.trim()}
+              disabled={!title.trim() || !content.trim() || isLoading}
               className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              Lưu nhật ký
+              {isLoading ? "Đang lưu..." : "Lưu nhật ký"}
             </button>
             <button
               onClick={() => {
@@ -145,7 +196,8 @@ export default function DiaryPage() {
                 setContent("");
                 setMood(3);
               }}
-              className="px-6 py-2 bg-muted text-muted-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+              disabled={isLoading}
+              className="px-6 py-2 bg-muted text-muted-foreground rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               Hủy
             </button>
@@ -184,7 +236,8 @@ export default function DiaryPage() {
                 </div>
                 <button
                   onClick={() => handleDelete(entry.id)}
-                  className="text-destructive hover:text-destructive/80 text-sm"
+                  disabled={isLoading}
+                  className="text-destructive hover:text-destructive/80 text-sm disabled:opacity-50"
                 >
                   Xóa
                 </button>
