@@ -116,7 +116,7 @@ export default function PaymentPage() {
                   </p>
                   <div className="flex justify-center">
                     <img 
-                      src="/qr_payment.png" 
+                      src="/qr_payment.jpg" 
                       alt="QR Payment" 
                       className="w-48 h-48 border border-gray-200 rounded-lg"
                     />
