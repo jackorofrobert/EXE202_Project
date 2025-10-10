@@ -6,6 +6,7 @@ import Logo from "../../components/ui/logo"
 import PsychologistAppointments from "./appointments"
 import PsychologistChatPage from "./chat"
 import PsychologistProfile from "./profile"
+import PsychologistRatingsPage from "./ratings"
 
 export default function PsychologistDashboard() {
   const { logout } = useAuth()
@@ -14,6 +15,7 @@ export default function PsychologistDashboard() {
   const navItems = [
     { path: "/psychologist", label: "Lịch hẹn", icon: "📅" },
     { path: "/psychologist/chat", label: "Tin nhắn", icon: "💬" },
+    { path: "/psychologist/ratings", label: "Đánh giá", icon: "⭐" },
     { path: "/psychologist/profile", label: "Hồ sơ", icon: "👤" },
   ]
 
@@ -57,14 +59,15 @@ export default function PsychologistDashboard() {
         </div>
       </aside>
 
-      <main className="flex-1 p-6">
-        <Routes>
-          <Route index element={<PsychologistAppointments />} />
-          <Route path="chat" element={<PsychologistChatPage />} />
-          <Route path="profile" element={<PsychologistProfile />} />
-          <Route path="*" element={<Navigate to="/psychologist" replace />} />
-        </Routes>
-      </main>
+                <main className="flex-1 p-6">
+                  <Routes>
+                    <Route index element={<PsychologistAppointments />} />
+                    <Route path="chat" element={<PsychologistChatPage />} />
+                    <Route path="ratings" element={<PsychologistRatingsPage />} />
+                    <Route path="profile" element={<PsychologistProfile />} />
+                    <Route path="*" element={<Navigate to="/psychologist" replace />} />
+                  </Routes>
+                </main>
     </div>
   )
 }

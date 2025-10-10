@@ -659,4 +659,49 @@ export class FirestoreService {
       throw error
     }
   }
+
+  // Rating methods
+  static async updateBookingRating(bookingId: string, rating: number, comment: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'bookings', bookingId), {
+        rating,
+        ratingComment: comment,
+        ratedAt: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Error updating booking rating:', error)
+      throw error
+    }
+  }
+
+  static async getBookingRating(bookingId: string): Promise<{ rating?: number; ratingComment?: string; ratedAt?: string } | null> {
+    try {
+      const bookingDoc = await getDoc(doc(db, 'bookings', bookingId))
+      if (bookingDoc.exists()) {
+        const data = bookingDoc.data()
+        return {
+          rating: data.rating,
+          ratingComment: data.ratingComment,
+          ratedAt: data.ratedAt
+        }
+      }
+      return null
+    } catch (error) {
+      console.error('Error getting booking rating:', error)
+      throw error
+    }
+  }
+
+  static async getAllBookings(): Promise<Booking[]> {
+    try {
+      const bookingsSnapshot = await getDocs(collection(db, 'bookings'))
+      return bookingsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Booking))
+    } catch (error) {
+      console.error('Error getting all bookings:', error)
+      throw error
+    }
+  }
 }

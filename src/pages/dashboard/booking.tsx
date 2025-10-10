@@ -7,6 +7,7 @@ import { useToast } from "../../hooks/use-toast"
 import type { Psychologist, Booking } from "../../types"
 import PsychologistCard from "../../components/booking/psychologist-card"
 import BookingModal from "../../components/booking/booking-modal"
+import { RatingModal } from "../../components/ui/rating-modal"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
@@ -20,6 +21,10 @@ export default function BookingPage() {
   const [selectedPsychologist, setSelectedPsychologist] = useState<Psychologist | null>(null)
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Rating modal states
+  const [showRatingModal, setShowRatingModal] = useState(false)
+  const [selectedBookingForRating, setSelectedBookingForRating] = useState<Booking | null>(null)
 
   const loadPsychologists = useCallback(async () => {
     try {
@@ -143,6 +148,35 @@ export default function BookingPage() {
     }
   }
 
+  const handleRatingSubmit = async (rating: number, comment: string) => {
+    if (!selectedBookingForRating) return
+
+    try {
+      await FirestoreService.updateBookingRating(selectedBookingForRating.id, rating, comment)
+      
+      toast({
+        title: "Thành công",
+        description: "Cảm ơn bạn đã đánh giá! Đánh giá của bạn đã được ghi nhận."
+      })
+
+      setShowRatingModal(false)
+      setSelectedBookingForRating(null)
+      loadBookings() // Reload bookings to show updated rating
+    } catch (error) {
+      console.error("Error submitting rating:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể gửi đánh giá. Vui lòng thử lại.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleRatePsychologist = (booking: Booking) => {
+    setSelectedBookingForRating(booking)
+    setShowRatingModal(true)
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -235,6 +269,30 @@ export default function BookingPage() {
                               Hủy lịch
                             </Button>
                           )}
+                          {booking.status === "completed" && !booking.rating && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRatePsychologist(booking)}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <StarIcon className="h-4 w-4 mr-1" />
+                              Đánh giá
+                            </Button>
+                          )}
+                          {booking.status === "completed" && booking.rating && (
+                            <div className="flex items-center gap-1 text-yellow-500">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <StarIcon
+                                  key={star}
+                                  className={`h-4 w-4 ${
+                                    star <= (booking.rating || 0) ? "fill-current" : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                              <span className="text-sm text-gray-600 ml-1">Đã đánh giá</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
@@ -264,6 +322,18 @@ export default function BookingPage() {
         psychologist={selectedPsychologist}
         onClose={() => setShowBookingModal(false)}
         onConfirm={handleBookingConfirm}
+      />
+
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => {
+          setShowRatingModal(false)
+          setSelectedBookingForRating(null)
+        }}
+        onSubmit={handleRatingSubmit}
+        psychologistName={selectedBookingForRating ? psychologists.find(p => p.id === selectedBookingForRating.psychologistId)?.name || "Bác sĩ" : ""}
+        appointmentDate={selectedBookingForRating ? new Date(selectedBookingForRating.date).toLocaleDateString("vi-VN") : ""}
+        appointmentTime={selectedBookingForRating?.time || ""}
       />
     </div>
   )

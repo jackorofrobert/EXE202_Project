@@ -11,6 +11,7 @@ import BookingStatsChart from "../../components/admin/booking-stats-chart"
 import UserModal from "../../components/admin/user-modal"
 import PsychologistModal from "../../components/admin/psychologist-modal"
 import TransactionManagement from "../../components/admin/transaction-management"
+import AdminRatingsPage from "./ratings"
 import type { AnalyticsData, User, Psychologist } from "../../types"
 
 export default function AdminDashboard() {
@@ -25,7 +26,7 @@ export default function AdminDashboard() {
     bookingGrowth: number
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists' | 'transactions'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists' | 'transactions' | 'ratings'>('overview')
   
   // Modal states
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
@@ -224,6 +225,16 @@ export default function AdminDashboard() {
             }`}
           >
             Giao dịch
+          </button>
+          <button
+            onClick={() => setActiveTab('ratings')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'ratings'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Đánh giá
           </button>
         </div>
 
@@ -468,6 +479,10 @@ export default function AdminDashboard() {
 
         {activeTab === 'transactions' && (
           <TransactionManagement />
+        )}
+
+        {activeTab === 'ratings' && (
+          <AdminRatingsPage />
         )}
       </main>
 

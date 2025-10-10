@@ -49,6 +49,9 @@ export interface Booking {
   time: string
   status: BookingStatus
   notes?: string
+  rating?: number
+  ratingComment?: string
+  ratedAt?: string
   createdAt: string
 }
 
