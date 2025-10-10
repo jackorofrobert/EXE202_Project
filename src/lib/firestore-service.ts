@@ -635,7 +635,23 @@ export class FirestoreService {
         const transactionData = transactionDoc.data() as Transaction
         
         if (transactionData.type === 'upgrade_to_gold') {
-          await this.updateUser(transactionData.userId, { tier: 'gold' })
+          // Calculate expiration date based on planType
+          const now = new Date()
+          let expirationDate: Date
+          
+          // Handle planType: yearly, monthly, or missing field (default to monthly)
+          if (transactionData.planType === 'yearly') {
+            // Yearly plan - 365 days
+            expirationDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000)
+          } else {
+            // Monthly plan, missing planType field, or any other value (default to monthly) - 30 days
+            expirationDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+          }
+          
+          await this.updateUser(transactionData.userId, { 
+            tier: 'gold',
+            goldExpiresAt: expirationDate.toISOString()
+          })
         }
       }
     } catch (error) {

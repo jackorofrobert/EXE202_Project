@@ -15,6 +15,28 @@ export default function UpgradePage() {
   };
 
   if (user?.tier === "gold") {
+    // Calculate Gold membership expiration
+    const getGoldExpirationInfo = () => {
+      if (!user.goldExpiresAt) {
+        return { message: "Thành viên Gold vĩnh viễn", isExpiring: false }
+      }
+      
+      const expirationDate = new Date(user.goldExpiresAt)
+      const now = new Date()
+      const timeLeft = expirationDate.getTime() - now.getTime()
+      const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24))
+      
+      if (daysLeft <= 0) {
+        return { message: "Thành viên Gold đã hết hạn", isExpiring: true }
+      } else if (daysLeft <= 7) {
+        return { message: `Thành viên Gold còn ${daysLeft} ngày`, isExpiring: true }
+      } else {
+        return { message: `Thành viên Gold còn ${daysLeft} ngày`, isExpiring: false }
+      }
+    }
+
+    const expirationInfo = getGoldExpirationInfo()
+
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Nâng cấp tài khoản</h2>
@@ -23,9 +45,27 @@ export default function UpgradePage() {
           <h3 className="text-xl font-semibold mb-2">
             Bạn đã là thành viên Gold!
           </h3>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             Bạn đang sử dụng đầy đủ tính năng của EmoCare
           </p>
+          <div className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium ${
+            expirationInfo.isExpiring 
+              ? 'bg-orange-100 text-orange-800 border border-orange-200' 
+              : 'bg-green-100 text-green-800 border border-green-200'
+          }`}>
+            {expirationInfo.isExpiring ? '⚠️ ' : '✅ '}
+            {expirationInfo.message}
+          </div>
+          {expirationInfo.isExpiring && (
+            <div className="mt-4">
+              <button
+                onClick={handleUpgrade}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Gia hạn Gold
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -85,8 +125,12 @@ export default function UpgradePage() {
           </div>
           <div>
             <h3 className="text-xl font-semibold mb-2">Gold</h3>
-            <div className="text-3xl font-bold">299.000đ</div>
-            <p className="text-sm text-muted-foreground">Mỗi tháng</p>
+            <div className="space-y-2">
+              <div className="text-3xl font-bold">59.000đ</div>
+              <p className="text-sm text-muted-foreground">Mỗi tháng</p>
+              <div className="text-lg font-semibold text-green-600">599.000đ</div>
+              <p className="text-sm text-green-600 font-medium">Mỗi năm (Tiết kiệm 109.000đ)</p>
+            </div>
           </div>
           <ul className="space-y-2 text-sm">
             <li className="flex items-start gap-2">

@@ -212,10 +212,16 @@ export default function TransactionManagement() {
     }
   }
 
-  const getTypeText = (type: string) => {
+  const getTypeText = (type: string, planType?: string) => {
     switch (type) {
       case "upgrade_to_gold":
-        return "Nâng cấp Gold"
+        // Handle planType: yearly, monthly, or missing field (default to monthly)
+        if (planType === 'yearly') {
+          return 'Nâng cấp Gold (Hàng năm)'
+        } else {
+          // Monthly plan, missing planType field, or any other value (default to monthly)
+          return 'Nâng cấp Gold (Hàng tháng)'
+        }
       default:
         return type
     }
@@ -354,7 +360,7 @@ export default function TransactionManagement() {
                             onClick={(e) => e.stopPropagation()}
                           />
                           <div>
-                            <h3 className="font-semibold">{getTypeText(transaction.type)}</h3>
+                            <h3 className="font-semibold">{getTypeText(transaction.type, transaction.planType)}</h3>
                             <p className="text-sm text-gray-600">
                               {transaction.amount.toLocaleString('vi-VN')} VND
                             </p>
@@ -426,7 +432,7 @@ export default function TransactionManagement() {
               <CardContent className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium">Loại giao dịch</Label>
-                  <p>{getTypeText(selectedTransaction.type)}</p>
+                  <p>{getTypeText(selectedTransaction.type, selectedTransaction.planType)}</p>
                 </div>
 
                 <div>

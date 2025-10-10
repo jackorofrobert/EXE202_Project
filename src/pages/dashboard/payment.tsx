@@ -6,6 +6,7 @@ import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
 import { Separator } from "../../components/ui/separator"
+import { Label } from "../../components/ui/label"
 import FileUpload from "../../components/ui/file-upload"
 import { FirestoreService } from "../../lib/firestore-service"
 import { useAuth } from "../../contexts/auth-context"
@@ -20,7 +21,9 @@ export default function PaymentPage() {
   const [paymentProof, setPaymentProof] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const upgradePrice = 299000 // 299k VND
+  const upgradePrice = 59000 // 59k VND per month
+  const yearlyPrice = 599000 // 599k VND per year
+  const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly')
 
   const handleSubmitTransaction = async () => {
     if (!paymentProof) {
@@ -46,9 +49,10 @@ export default function PaymentPage() {
       await FirestoreService.createTransaction({
         userId: user.id,
         type: "upgrade_to_gold",
-        amount: upgradePrice,
+        amount: selectedPlan === 'monthly' ? upgradePrice : yearlyPrice,
         status: "pending",
-        paymentProof: paymentProof
+        paymentProof: paymentProof,
+        planType: selectedPlan
       })
 
       toast({
@@ -102,11 +106,49 @@ export default function PaymentPage() {
                   <Badge variant="secondary">Gold Member</Badge>
                 </div>
                 
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-medium">Chọn gói:</Label>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan('monthly')}
+                        className={`p-3 rounded-lg border text-left transition-colors ${
+                          selectedPlan === 'monthly'
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="font-semibold">Hàng tháng</div>
+                        <div className="text-sm text-gray-600">59.000đ/tháng</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPlan('yearly')}
+                        className={`p-3 rounded-lg border text-left transition-colors ${
+                          selectedPlan === 'yearly'
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="font-semibold">Hàng năm</div>
+                        <div className="text-sm text-gray-600">599.000đ/năm</div>
+                        <div className="text-xs text-green-600 font-medium">Tiết kiệm 109.000đ</div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
                 <Separator />
                 
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Giá:</span>
-                  <span className="font-semibold text-lg">{upgradePrice.toLocaleString('vi-VN')} VND</span>
+                  <span className="font-semibold text-lg">
+                    {selectedPlan === 'monthly' 
+                      ? `${upgradePrice.toLocaleString('vi-VN')} VND` 
+                      : `${yearlyPrice.toLocaleString('vi-VN')} VND`
+                    }
+                  </span>
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -126,7 +168,7 @@ export default function PaymentPage() {
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-yellow-900 mb-2">Lưu ý quan trọng:</h4>
                   <ul className="text-sm text-yellow-800 space-y-1">
-                    <li>• Chuyển khoản chính xác số tiền: {upgradePrice.toLocaleString('vi-VN')} VND</li>
+                    <li>• Chuyển khoản chính xác số tiền: {selectedPlan === 'monthly' ? upgradePrice.toLocaleString('vi-VN') : yearlyPrice.toLocaleString('vi-VN')} VND</li>
                     <li>• Nội dung chuyển khoản: "UPGRADE {user?.email}"</li>
                     <li>• Sau khi chuyển khoản, hãy upload ảnh chứng minh</li>
                     <li>• Giao dịch sẽ được duyệt trong vòng 24h</li>

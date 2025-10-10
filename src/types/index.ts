@@ -10,6 +10,7 @@ export interface User {
   role: UserRole
   tier?: UserTier
   avatar?: string
+  goldExpiresAt?: string
   createdAt: string
 }
 
@@ -86,6 +87,7 @@ export interface Transaction {
   status: TransactionStatus
   paymentProof?: string
   adminNotes?: string
+  planType?: "monthly" | "yearly"
   createdAt: string
   updatedAt: string
 }

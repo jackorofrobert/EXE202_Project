@@ -26,27 +26,55 @@ export default function UserProfile() {
   const loadProfile = useCallback(async () => {
     if (!user?.id) return
     
+    console.log("Profile - Loading profile for user:", user)
     setIsLoading(true)
     try {
+      // Use user from context first, then fetch from Firestore if needed
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        avatar: user.avatar || ""
+      })
+      
+      console.log("Profile - Set formData from context:", {
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar
+      })
+      
+      // Also fetch latest data from Firestore
       const userData = await FirestoreService.getUser(user.id)
+      console.log("Profile - Fetched userData from Firestore:", userData)
+      
       if (userData) {
         setFormData({
-          name: userData.name || "",
-          email: userData.email || "",
-          avatar: userData.avatar || ""
+          name: userData.name || user.name || "",
+          email: userData.email || user.email || "",
+          avatar: userData.avatar || user.avatar || ""
+        })
+        console.log("Profile - Updated formData from Firestore:", {
+          name: userData.name || user.name,
+          email: userData.email || user.email,
+          avatar: userData.avatar || user.avatar
         })
       }
     } catch (error) {
       console.error("Error loading profile:", error)
+      // Fallback to context data
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        avatar: user.avatar || ""
+      })
       toast({
         title: "Lỗi",
-        description: "Không thể tải thông tin hồ sơ",
+        description: "Không thể tải thông tin hồ sơ từ server",
         variant: "destructive"
       })
     } finally {
       setIsLoading(false)
     }
-  }, [user?.id, toast])
+  }, [user, toast])
 
   useEffect(() => {
     loadProfile()
@@ -84,6 +112,42 @@ export default function UserProfile() {
 
   const handleAvatarChange = (avatarUrl: string) => {
     setFormData(prev => ({ ...prev, avatar: avatarUrl }))
+  }
+
+  // Calculate Gold membership expiration info
+  const getGoldExpirationInfo = () => {
+    if (!user?.goldExpiresAt) {
+      return { 
+        message: "Thành viên Gold vĩnh viễn", 
+        isExpiring: false,
+        daysLeft: null
+      }
+    }
+    
+    const expirationDate = new Date(user.goldExpiresAt)
+    const now = new Date()
+    const timeLeft = expirationDate.getTime() - now.getTime()
+    const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24))
+    
+    if (daysLeft <= 0) {
+      return { 
+        message: "Thành viên Gold đã hết hạn", 
+        isExpiring: true,
+        daysLeft: 0
+      }
+    } else if (daysLeft <= 7) {
+      return { 
+        message: `Thành viên Gold còn ${daysLeft} ngày`, 
+        isExpiring: true,
+        daysLeft: daysLeft
+      }
+    } else {
+      return { 
+        message: `Thành viên Gold còn ${daysLeft} ngày`, 
+        isExpiring: false,
+        daysLeft: daysLeft
+      }
+    }
   }
 
   if (isLoading) {
@@ -135,7 +199,7 @@ export default function UserProfile() {
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200">
                   <img
-                    src={formData.avatar || "/placeholder-user.jpg"}
+                    src={formData.avatar || user?.avatar || "/placeholder-user.jpg"}
                     alt="Avatar"
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -154,9 +218,51 @@ export default function UserProfile() {
                       <CrownIcon className="h-3 w-3 mr-1" />
                       {user?.tier === 'gold' ? 'Gold Member' : 'Free Member'}
                     </Badge>
+                    {user?.tier === 'gold' && (
+                      <div className={`text-xs px-2 py-1 rounded-full ${
+                        getGoldExpirationInfo().isExpiring 
+                          ? 'bg-orange-100 text-orange-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {getGoldExpirationInfo().message}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+
+              {/* Gold Membership Info */}
+              {user?.tier === 'gold' && (
+                <div className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                  <h4 className="font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                    <CrownIcon className="h-4 w-4" />
+                    Thông tin Gold Membership
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-yellow-700">Trạng thái:</span>
+                      <span className={`font-medium ${
+                        getGoldExpirationInfo().isExpiring ? 'text-orange-600' : 'text-green-600'
+                      }`}>
+                        {getGoldExpirationInfo().message}
+                      </span>
+                    </div>
+                    {getGoldExpirationInfo().daysLeft !== null && (
+                      <div className="flex justify-between">
+                        <span className="text-yellow-700">Ngày hết hạn:</span>
+                        <span className="text-yellow-800 font-medium">
+                          {user.goldExpiresAt ? new Date(user.goldExpiresAt).toLocaleDateString('vi-VN') : 'Không xác định'}
+                        </span>
+                      </div>
+                    )}
+                    {getGoldExpirationInfo().isExpiring && getGoldExpirationInfo().daysLeft !== null && (
+                      <div className="mt-3 p-2 bg-orange-100 rounded text-xs text-orange-800">
+                        ⚠️ Gold membership sẽ hết hạn sớm. Hãy gia hạn để tiếp tục sử dụng các tính năng premium.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Form Fields */}
               <div className="space-y-4">
