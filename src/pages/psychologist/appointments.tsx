@@ -3,11 +3,15 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../components/ui/dialog"
 import { Button } from "../../components/ui/button"
 import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
+import { Badge } from "../../components/ui/badge"
+import { Card, CardContent } from "../../components/ui/card"
+import { Calendar } from "../../components/ui/calendar"
 import { useToast } from "../../hooks/use-toast"
+import { CalendarIcon, ClockIcon, UserIcon, CheckIcon, XIcon, ListIcon, GridIcon } from "lucide-react"
 import type { Booking, BookingStatus } from "../../types"
 
 export default function PsychologistAppointments() {
@@ -17,6 +21,7 @@ export default function PsychologistAppointments() {
   const [selectedAppointment, setSelectedAppointment] = useState<Booking | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [notes, setNotes] = useState("")
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar')
   const { toast } = useToast()
 
   const loadAppointments = useCallback(async () => {
@@ -87,87 +92,163 @@ export default function PsychologistAppointments() {
     }
   }
 
+  const handleCalendarDateClick = (date: string) => {
+    const dayAppointments = appointments.filter(apt => apt.date === date)
+    if (dayAppointments.length > 0) {
+      toast({
+        title: `Lịch hẹn ngày ${new Date(date).toLocaleDateString('vi-VN')}`,
+        description: `Có ${dayAppointments.length} lịch hẹn trong ngày này`
+      })
+    }
+  }
+
+  const handleCalendarAppointmentClick = (appointment: Booking) => {
+    handleViewDetails(appointment)
+  }
+
+  const getStatusBadge = (status: BookingStatus) => {
+    switch (status) {
+      case "pending":
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Chờ xác nhận</Badge>
+      case "confirmed":
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Đã xác nhận</Badge>
+      case "completed":
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Hoàn thành</Badge>
+      case "cancelled":
+        return <Badge variant="secondary" className="bg-red-100 text-red-800">Đã hủy</Badge>
+      default:
+        return <Badge variant="secondary">{status}</Badge>
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Lịch hẹn</h2>
-        <p className="text-muted-foreground">Quản lý các cuộc hẹn với bệnh nhân</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold mb-2">Lịch hẹn</h2>
+          <p className="text-muted-foreground">Quản lý các cuộc hẹn với bệnh nhân</p>
+        </div>
+        
+        {/* View Toggle */}
+        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+          <Button
+            variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('calendar')}
+            className="flex items-center gap-2"
+          >
+            <GridIcon className="h-4 w-4" />
+            Lịch
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className="flex items-center gap-2"
+          >
+            <ListIcon className="h-4 w-4" />
+            Danh sách
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Đang tải lịch hẹn...</p>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Đang tải lịch hẹn...</p>
+          </div>
         </div>
       ) : appointments.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Chưa có lịch hẹn nào</p>
-        </div>
+        <Card>
+          <CardContent className="text-center py-8">
+            <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Chưa có lịch hẹn nào</p>
+          </CardContent>
+        </Card>
+      ) : viewMode === 'calendar' ? (
+        <Calendar
+          appointments={appointments}
+          onDateClick={handleCalendarDateClick}
+          onAppointmentClick={handleCalendarAppointmentClick}
+        />
       ) : (
         <div className="space-y-4">
           {appointments.map((appointment) => (
-            <div key={appointment.id} className="bg-card rounded-lg p-6 border border-border">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-semibold mb-1">Bệnh nhân #{appointment.userId}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(appointment.date).toLocaleDateString("vi-VN")} - {appointment.time}
-                  </p>
-                  {appointment.notes && (
-                    <p className="text-sm mt-2">{appointment.notes}</p>
+            <Card key={appointment.id}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <UserIcon className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Bệnh nhân #{appointment.userId}</h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="h-4 w-4" />
+                          {new Date(appointment.date).toLocaleDateString("vi-VN")}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <ClockIcon className="h-4 w-4" />
+                          {appointment.time}
+                        </span>
+                      </div>
+                      {appointment.notes && (
+                        <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+                          {appointment.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(appointment.status)}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(appointment)}
+                  >
+                    Xem chi tiết
+                  </Button>
+                  
+                  {appointment.status === 'pending' && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => handleStatusChange(appointment.id, 'confirmed')}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckIcon className="h-4 w-4 mr-1" />
+                        Xác nhận
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                      >
+                        <XIcon className="h-4 w-4 mr-1" />
+                        Hủy
+                      </Button>
+                    </>
+                  )}
+                  
+                  {appointment.status === 'confirmed' && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleStatusChange(appointment.id, 'completed')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <CheckIcon className="h-4 w-4 mr-1" />
+                      Hoàn thành
+                    </Button>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    appointment.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                    appointment.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {appointment.status === 'pending' ? 'Chờ xác nhận' :
-                     appointment.status === 'confirmed' ? 'Đã xác nhận' :
-                     appointment.status === 'completed' ? 'Hoàn thành' : 'Đã hủy'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleViewDetails(appointment)}
-                >
-                  Xem chi tiết
-                </Button>
-                
-                {appointment.status === 'pending' && (
-                  <>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStatusChange(appointment.id, 'confirmed')}
-                    >
-                      Xác nhận
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleStatusChange(appointment.id, 'cancelled')}
-                    >
-                      Hủy
-                    </Button>
-                  </>
-                )}
-                
-                {appointment.status === 'confirmed' && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleStatusChange(appointment.id, 'completed')}
-                  >
-                    Hoàn thành
-                  </Button>
-                )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -177,6 +258,9 @@ export default function PsychologistAppointments() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Chi tiết lịch hẹn</DialogTitle>
+            <DialogDescription>
+              Xem và cập nhật thông tin chi tiết về lịch hẹn
+            </DialogDescription>
           </DialogHeader>
           
           {selectedAppointment && (

@@ -39,7 +39,12 @@ export default function PsychologistCard({ psychologist, onBook }: PsychologistC
           {psychologist.available ? "Đang hoạt động" : "Không khả dụng"}
         </span>
         <button
-          onClick={() => onBook(psychologist)}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('PsychologistCard - Button clicked for:', psychologist.name)
+            onBook(psychologist)
+          }}
           disabled={!psychologist.available}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >

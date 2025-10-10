@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../components/ui/dialog"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
@@ -39,13 +39,13 @@ export default function PsychologistProfile() {
       if (currentProfile) {
         setProfile(currentProfile)
         setFormData({
-          name: currentProfile.name,
-          email: currentProfile.email,
-          specialization: currentProfile.specialization,
-          experience: currentProfile.experience,
-          bio: currentProfile.bio,
-          available: currentProfile.available,
-          rating: currentProfile.rating,
+          name: currentProfile.name || "",
+          email: currentProfile.email || "",
+          specialization: currentProfile.specialization || "",
+          experience: currentProfile.experience || 0,
+          bio: currentProfile.bio || "",
+          available: currentProfile.available ?? true,
+          rating: currentProfile.rating || 0,
           totalRatings: currentProfile.totalRatings || 0
         })
       }
@@ -192,6 +192,9 @@ export default function PsychologistProfile() {
         <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
+            <DialogDescription>
+              Cập nhật thông tin cá nhân và chuyên môn của bạn
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">

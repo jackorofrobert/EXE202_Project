@@ -50,6 +50,11 @@ export const authService = {
     await signOut(auth)
   },
 
+  // Get current Firebase user
+  getCurrentFirebaseUser(): FirebaseUser | null {
+    return auth.currentUser
+  },
+
   // Get current user data from Firestore
   async getCurrentUser(firebaseUser: FirebaseUser): Promise<User | null> {
     const userDoc = await getDoc(doc(db, "users", firebaseUser.uid))

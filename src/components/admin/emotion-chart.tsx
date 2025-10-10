@@ -23,8 +23,12 @@ export default function EmotionChart({ data }: EmotionChartProps) {
         <div className="relative w-48 h-48">
           <svg viewBox="0 0 100 100" className="transform -rotate-90">
             {data.map((item, index) => {
-              const percentage = (item.count / total) * 100
-              const offset = data.slice(0, index).reduce((sum, d) => sum + (d.count / total) * 100, 0)
+              const percentage = total > 0 ? (item.count / total) * 100 : 0
+              const offset = total > 0 ? data.slice(0, index).reduce((sum, d) => sum + (d.count / total) * 100, 0) : 0
+              const circumference = 2 * Math.PI * 40 // 2πr where r=40
+              const strokeDasharray = total > 0 ? `${percentage * circumference / 100} ${circumference}` : `0 ${circumference}`
+              const strokeDashoffset = total > 0 ? -offset * circumference / 100 : 0
+              
               return (
                 <circle
                   key={item.level}
@@ -34,8 +38,8 @@ export default function EmotionChart({ data }: EmotionChartProps) {
                   fill="none"
                   stroke={colors[index]}
                   strokeWidth="20"
-                  strokeDasharray={`${percentage * 2.51} ${251 - percentage * 2.51}`}
-                  strokeDashoffset={-offset * 2.51}
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
                 />
               )
             })}

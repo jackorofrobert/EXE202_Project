@@ -3,6 +3,7 @@
 import { Routes, Route, Navigate, Link, useLocation } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
 import PsychologistAppointments from "./appointments"
+import PsychologistChatPage from "./chat"
 import PsychologistProfile from "./profile"
 
 export default function PsychologistDashboard() {
@@ -52,7 +53,7 @@ export default function PsychologistDashboard() {
       <main className="flex-1 p-8">
         <Routes>
           <Route index element={<PsychologistAppointments />} />
-          <Route path="chat" element={<div>Tin nhắn - Coming soon</div>} />
+          <Route path="chat" element={<PsychologistChatPage />} />
           <Route path="profile" element={<PsychologistProfile />} />
           <Route path="*" element={<Navigate to="/psychologist" replace />} />
         </Routes>

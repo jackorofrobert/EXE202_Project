@@ -11,6 +11,8 @@ import {
   orderBy, 
   limit,
   serverTimestamp,
+  onSnapshot,
+  Unsubscribe
 } from 'firebase/firestore'
 import { db } from './firebase/config'
 import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, BookingStatus, Transaction, TransactionStatus, ChatMessage } from '../types'
@@ -265,8 +267,13 @@ export class FirestoreService {
 
   static async updatePsychologist(psychologistId: string, psychologistData: Partial<Psychologist>): Promise<void> {
     try {
+      // Filter out undefined values to prevent Firebase errors
+      const cleanData = Object.fromEntries(
+        Object.entries(psychologistData).filter(([_, value]) => value !== undefined)
+      )
+      
       await updateDoc(doc(db, 'users', psychologistId), {
-        ...psychologistData,
+        ...cleanData,
         updatedAt: serverTimestamp()
       })
     } catch (error) {
@@ -344,11 +351,15 @@ export class FirestoreService {
   // Chat operations
   static async addChatMessage(conversationId: string, messageData: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<string> {
     try {
+      console.log('FirestoreService - addChatMessage called with:', { conversationId, messageData })
+      
       const docRef = await addDoc(collection(db, 'chat_messages'), {
         ...messageData,
         conversationId,
         createdAt: serverTimestamp()
       })
+      
+      console.log('FirestoreService - Message added with ID:', docRef.id)
       return docRef.id
     } catch (error) {
       console.error('Error adding chat message:', error)
@@ -368,7 +379,7 @@ export class FirestoreService {
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() || new Date()
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
       })) as ChatMessage[]
     } catch (error) {
       console.error('Error getting chat messages:', error)
@@ -376,7 +387,182 @@ export class FirestoreService {
     }
   }
 
-  // Transaction methods
+  static async getChatMessagesForPsychologist(psychologistId: string): Promise<ChatMessage[]> {
+    try {
+      const q = query(
+        collection(db, 'chat_messages'),
+        where('receiverId', '==', psychologistId),
+        orderBy('createdAt', 'desc')
+      )
+
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+      })) as ChatMessage[]
+    } catch (error) {
+      console.error('Error getting chat messages for psychologist:', error)
+      return []
+    }
+  }
+
+  // Real-time chat listeners
+  static subscribeToChatMessages(
+    conversationId: string, 
+    callback: (messages: ChatMessage[]) => void
+  ): Unsubscribe {
+    console.log('FirestoreService - subscribeToChatMessages for conversationId:', conversationId)
+    
+    // Simplified query without orderBy to avoid index requirement
+    const q = query(
+      collection(db, 'chat_messages'),
+      where('conversationId', '==', conversationId)
+    )
+
+    return onSnapshot(q, (snapshot) => {
+      console.log('FirestoreService - onSnapshot triggered, docs count:', snapshot.docs.length)
+      
+      const messages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+      })) as ChatMessage[]
+      
+      console.log('FirestoreService - Processed messages:', messages)
+      
+      // Sort messages by createdAt in JavaScript
+      messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      
+      callback(messages)
+    }, (error) => {
+      console.error('Error listening to chat messages:', error)
+      // Fallback: try to load messages without real-time
+      this.getChatMessages(conversationId).then(callback).catch(console.error)
+    })
+  }
+
+  static subscribeToPsychologistChatSessions(
+    psychologistId: string,
+    callback: (sessions: Array<{
+      id: string
+      userId: string
+      userName: string
+      lastMessage?: string
+      lastMessageTime?: string
+      unreadCount: number
+    }>) => void
+  ): Unsubscribe {
+    // Simplified query without orderBy to avoid index requirement
+    const q = query(
+      collection(db, 'chat_messages'),
+      where('receiverId', '==', psychologistId)
+    )
+
+    return onSnapshot(q, (snapshot) => {
+      const allMessages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+      })) as ChatMessage[]
+
+      // Sort messages by createdAt in JavaScript
+      allMessages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+      // Group messages by conversation
+      const sessionMap = new Map<string, {
+        id: string
+        userId: string
+        userName: string
+        lastMessage?: string
+        lastMessageTime?: string
+        unreadCount: number
+      }>()
+      
+      allMessages.forEach((message) => {
+        const conversationId = message.conversationId || `${message.senderId}_${psychologistId}`
+        const userId = message.senderId === psychologistId ? message.receiverId : message.senderId
+        
+        if (!sessionMap.has(conversationId)) {
+          sessionMap.set(conversationId, {
+            id: conversationId,
+            userId: userId || '',
+            userName: `User #${userId}`,
+            unreadCount: 0
+          })
+        }
+        
+        const session = sessionMap.get(conversationId)!
+        
+        // Update last message info
+        if (!session.lastMessageTime || new Date(message.createdAt) > new Date(session.lastMessageTime)) {
+          session.lastMessage = message.content
+          session.lastMessageTime = message.createdAt
+          
+          // Count unread messages (messages not from psychologist)
+          if (message.senderId !== psychologistId) {
+            session.unreadCount++
+          }
+        }
+      })
+      
+      // Convert to array and sort by last message time
+      const sessions = Array.from(sessionMap.values())
+        .sort((a, b) => {
+          if (!a.lastMessageTime || !b.lastMessageTime) return 0
+          return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+        })
+      
+      callback(sessions)
+    }, (error) => {
+      console.error('Error listening to psychologist chat sessions:', error)
+      // Fallback: try to load sessions without real-time
+      this.getChatMessagesForPsychologist(psychologistId).then((messages) => {
+        // Process messages into sessions
+        const sessionMap = new Map<string, {
+          id: string
+          userId: string
+          userName: string
+          lastMessage?: string
+          lastMessageTime?: string
+          unreadCount: number
+        }>()
+        
+        messages.forEach((message) => {
+          const conversationId = message.conversationId || `${message.senderId}_${psychologistId}`
+          const userId = message.senderId === psychologistId ? message.receiverId : message.senderId
+          
+          if (!sessionMap.has(conversationId)) {
+            sessionMap.set(conversationId, {
+              id: conversationId,
+              userId: userId || '',
+              userName: `User #${userId}`,
+              unreadCount: 0
+            })
+          }
+          
+          const session = sessionMap.get(conversationId)!
+          
+          if (!session.lastMessageTime || new Date(message.createdAt) > new Date(session.lastMessageTime)) {
+            session.lastMessage = message.content
+            session.lastMessageTime = message.createdAt
+            
+            if (message.senderId !== psychologistId) {
+              session.unreadCount++
+            }
+          }
+        })
+        
+        const sessions = Array.from(sessionMap.values())
+          .sort((a, b) => {
+            if (!a.lastMessageTime || !b.lastMessageTime) return 0
+            return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+          })
+        
+        callback(sessions)
+      }).catch(console.error)
+    })
+  }
   static async createTransaction(transactionData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const now = new Date().toISOString()

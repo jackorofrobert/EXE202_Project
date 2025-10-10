@@ -17,6 +17,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,6 +59,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    if (user?.id) {
+      try {
+        // Get current Firebase user
+        const firebaseUser = authService.getCurrentFirebaseUser()
+        if (firebaseUser) {
+          const userData = await authService.getCurrentUser(firebaseUser)
+          if (userData) {
+            setUser(userData)
+          }
+        }
+      } catch (error) {
+        console.error("Error refreshing user:", error)
+      }
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -67,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
       }}
     >
       {children}

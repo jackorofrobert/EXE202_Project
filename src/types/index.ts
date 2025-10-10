@@ -33,10 +33,11 @@ export interface DiaryEntry {
 export interface ChatMessage {
   id: string
   senderId: string
-  receiverId: string
-  message: string
+  receiverId?: string
+  content: string
+  type: "user" | "psychologist"
+  conversationId?: string
   createdAt: string
-  read: boolean
 }
 
 export interface Booking {
