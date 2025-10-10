@@ -15,11 +15,15 @@ interface CalendarProps {
     userId: string
     notes?: string
   }>
+  users?: Array<{
+    id: string
+    name: string
+  }>
   onDateClick?: (date: string) => void
   onAppointmentClick?: (appointment: any) => void
 }
 
-export function Calendar({ className, appointments, onDateClick, onAppointmentClick }: CalendarProps) {
+export function Calendar({ className, appointments, users = [], onDateClick, onAppointmentClick }: CalendarProps) {
   const [currentDate, setCurrentDate] = React.useState(new Date())
   
   const monthNames = [
@@ -142,7 +146,7 @@ export function Calendar({ className, appointments, onDateClick, onAppointmentCl
                         onAppointmentClick?.(appointment)
                       }}
                     >
-                      {appointment.time} - #{appointment.userId}
+                      {appointment.time} - {users.find(u => u.id === appointment.userId)?.name || `#${appointment.userId}`}
                     </div>
                   ))}
                   {dayAppointments.length > 2 && (

@@ -12,11 +12,12 @@ import { Card, CardContent } from "../../components/ui/card"
 import { Calendar } from "../../components/ui/calendar"
 import { useToast } from "../../hooks/use-toast"
 import { CalendarIcon, ClockIcon, UserIcon, CheckIcon, XIcon, ListIcon, GridIcon } from "lucide-react"
-import type { Booking, BookingStatus } from "../../types"
+import type { Booking, BookingStatus, User } from "../../types"
 
 export default function PsychologistAppointments() {
   const { user } = useAuth()
   const [appointments, setAppointments] = useState<Booking[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedAppointment, setSelectedAppointment] = useState<Booking | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -29,8 +30,12 @@ export default function PsychologistAppointments() {
     
     setIsLoading(true)
     try {
-      const data = await FirestoreService.getBookingsForPsychologist(user.id)
-      setAppointments(data)
+      const [appointmentsData, usersData] = await Promise.all([
+        FirestoreService.getBookingsForPsychologist(user.id),
+        FirestoreService.getAllUsers()
+      ])
+      setAppointments(appointmentsData)
+      setUsers(usersData)
     } catch (error) {
       console.error("Error loading appointments:", error)
       toast({
@@ -169,12 +174,15 @@ export default function PsychologistAppointments() {
       ) : viewMode === 'calendar' ? (
         <Calendar
           appointments={appointments}
+          users={users}
           onDateClick={handleCalendarDateClick}
           onAppointmentClick={handleCalendarAppointmentClick}
         />
       ) : (
         <div className="space-y-4">
-          {appointments.map((appointment) => (
+          {appointments.map((appointment) => {
+            const user = users.find(u => u.id === appointment.userId)
+            return (
             <Card key={appointment.id}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
@@ -183,7 +191,7 @@ export default function PsychologistAppointments() {
                       <UserIcon className="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-1">Bệnh nhân #{appointment.userId}</h3>
+                      <h3 className="font-semibold mb-1">{user?.name || `Bệnh nhân #${appointment.userId}`}</h3>
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
                           <CalendarIcon className="h-4 w-4" />
@@ -249,7 +257,8 @@ export default function PsychologistAppointments() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
 
