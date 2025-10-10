@@ -459,7 +459,7 @@ export class FirestoreService {
       where('receiverId', '==', psychologistId)
     )
 
-    return onSnapshot(q, (snapshot) => {
+    return onSnapshot(q, async (snapshot) => {
       const allMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -468,6 +468,26 @@ export class FirestoreService {
 
       // Sort messages by createdAt in JavaScript
       allMessages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+      // Get unique user IDs
+      const userIds = [...new Set(allMessages.map(msg => 
+        msg.senderId === psychologistId ? msg.receiverId : msg.senderId
+      ).filter(Boolean))]
+
+      // Load user names
+      const usersMap = new Map<string, string>()
+      try {
+        const usersSnapshot = await getDocs(query(
+          collection(db, 'users'),
+          where('__name__', 'in', userIds)
+        ))
+        usersSnapshot.docs.forEach(doc => {
+          const userData = doc.data()
+          usersMap.set(doc.id, userData.name || `User #${doc.id}`)
+        })
+      } catch (error) {
+        console.error('Error loading user names:', error)
+      }
 
       // Group messages by conversation
       const sessionMap = new Map<string, {
@@ -487,7 +507,7 @@ export class FirestoreService {
           sessionMap.set(conversationId, {
             id: conversationId,
             userId: userId || '',
-            userName: `User #${userId}`,
+            userName: usersMap.get(userId || '') || `User #${userId}`,
             unreadCount: 0
           })
         }
