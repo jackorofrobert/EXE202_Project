@@ -30,7 +30,7 @@ export default function UserModal({ isOpen, onClose, user, onSuccess }: UserModa
 
   const isEdit = !!user
 
-  useEffect(() => {
+  const resetForm = () => {
     if (user) {
       setFormData({
         name: user.name,
@@ -48,7 +48,17 @@ export default function UserModal({ isOpen, onClose, user, onSuccess }: UserModa
         password: ""
       })
     }
+  }
+
+  useEffect(() => {
+    resetForm()
   }, [user])
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm()
+    }
+  }, [isOpen, user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

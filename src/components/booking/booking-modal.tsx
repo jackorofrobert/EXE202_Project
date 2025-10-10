@@ -81,10 +81,20 @@ export default function BookingModal({ isOpen, psychologist, onClose, onConfirm 
     e.preventDefault()
     if (selectedDate && selectedTimeSlots.length > 0) {
       onConfirm(selectedDate, selectedTimeSlots, notes)
-      setSelectedDate("")
-      setSelectedTimeSlots([])
-      setNotes("")
+      resetForm()
     }
+  }
+
+  const resetForm = () => {
+    setSelectedDate("")
+    setSelectedTimeSlots([])
+    setNotes("")
+    setExistingBookings([])
+  }
+
+  const handleClose = () => {
+    resetForm()
+    onClose()
   }
 
   if (!isOpen || !psychologist) return null
@@ -245,7 +255,7 @@ export default function BookingModal({ isOpen, psychologist, onClose, onConfirm 
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
             >
               Hủy

@@ -18,9 +18,20 @@ export default function EmotionCheckModal({ isOpen, onClose, onSubmit }: Emotion
   const emotionLabels = ["Rất tệ", "Tệ", "Bình thường", "Tốt", "Rất tốt"]
   const emotionColors = ["#ef4444", "#f59e0b", "#eab308", "#10b981", "#6366f1"]
 
+  const resetForm = () => {
+    setEmotionLevel(3)
+    setNote("")
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     onSubmit(emotionLevel, note)
+    resetForm()
+    onClose()
+  }
+
+  const handleClose = () => {
+    resetForm()
     onClose()
   }
 
@@ -77,7 +88,7 @@ export default function EmotionCheckModal({ isOpen, onClose, onSubmit }: Emotion
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="flex-1 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
             >
               Bỏ qua

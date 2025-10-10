@@ -34,7 +34,7 @@ export default function PsychologistModal({ isOpen, onClose, psychologist, onSuc
 
   const isEdit = !!psychologist
 
-  useEffect(() => {
+  const resetForm = () => {
     if (psychologist) {
       setFormData({
         name: psychologist.name,
@@ -58,7 +58,17 @@ export default function PsychologistModal({ isOpen, onClose, psychologist, onSuc
         password: ""
       })
     }
+  }
+
+  useEffect(() => {
+    resetForm()
   }, [psychologist])
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm()
+    }
+  }, [isOpen, psychologist])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
