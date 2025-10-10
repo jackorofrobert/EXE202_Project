@@ -8,9 +8,10 @@ interface LogoProps {
   onClick?: () => void
   clickable?: boolean
   showGoldMember?: boolean
+  iconOnly?: boolean
 }
 
-export default function Logo({ className, size = "md", onClick, clickable = false, showGoldMember = false }: LogoProps) {
+export default function Logo({ className, size = "md", onClick, clickable = false, showGoldMember = false, iconOnly = false }: LogoProps) {
   const sizeClasses = {
     sm: "h-6 w-6",
     md: "h-8 w-8", 
@@ -26,7 +27,7 @@ export default function Logo({ className, size = "md", onClick, clickable = fals
   return (
     <div 
       className={cn(
-        "flex flex-col items-start", 
+        iconOnly ? "flex items-center justify-center" : "flex flex-col items-start", 
         clickable && "cursor-pointer hover:opacity-80 transition-opacity",
         className
       )}
@@ -49,9 +50,11 @@ export default function Logo({ className, size = "md", onClick, clickable = fals
             }
           }}
         />
-        <span className={cn("font-bold text-foreground", textSizeClasses[size])}>EmoCare</span>
+        {!iconOnly && (
+          <span className={cn("font-bold text-foreground", textSizeClasses[size])}>EmoCare</span>
+        )}
       </div>
-      {showGoldMember && (
+      {showGoldMember && !iconOnly && (
         <span className="text-sm text-gray-500 mt-1 text-left">Gold Member</span>
       )}
     </div>

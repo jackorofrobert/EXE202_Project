@@ -29,7 +29,7 @@ export default function SidebarNav() {
     <div className="space-y-6">
       {/* Logo with Gold Member */}
       <div className="px-4 py-4 border-b border-border/50">
-        <Logo size="md" showGoldMember={isGoldUser} clickable onClick={handleLogoClick} />
+        <Logo size="lg" showGoldMember={isGoldUser} clickable onClick={handleLogoClick} iconOnly={true} className="scale-125" />
       </div>
 
       {/* User Info */}

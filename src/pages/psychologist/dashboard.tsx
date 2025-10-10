@@ -2,6 +2,7 @@
 
 import { Routes, Route, Navigate, Link, useLocation } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
+import Logo from "../../components/ui/logo"
 import PsychologistAppointments from "./appointments"
 import PsychologistChatPage from "./chat"
 import PsychologistProfile from "./profile"
@@ -21,6 +22,9 @@ export default function PsychologistDashboard() {
       <aside className="w-64 bg-card border-r border-border flex flex-col">
         <div className="flex-1 p-4">
           <div className="text-center mb-6">
+            <div className="flex justify-center mb-4">
+              <Logo size="lg" iconOnly={true} className="scale-125" />
+            </div>
             <h1 className="text-xl font-bold text-primary">Psychologist Dashboard</h1>
           </div>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service"
+import Logo from "../../components/ui/logo"
 import StatsCard from "../../components/admin/stats-card"
 import EmotionChart from "../../components/admin/emotion-chart"
 import UserGrowthChart from "../../components/admin/user-growth-chart"
@@ -165,9 +166,12 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">EmoCare Admin</h1>
-            <p className="text-sm text-muted-foreground">Xin chào, {user?.name}</p>
+          <div className="flex items-center gap-4">
+            <Logo size="md" iconOnly={true} className="scale-125" />
+            <div>
+              <h1 className="text-2xl font-bold">EmoCare Admin</h1>
+              <p className="text-sm text-muted-foreground">Xin chào, {user?.name}</p>
+            </div>
           </div>
           <button
             onClick={logout}
