@@ -181,10 +181,10 @@ function DashboardHome() {
         onSubmit={handleEmotionSubmit}
       />
 
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Xin chào, {user?.name}!</h2>
-          <p className="text-muted-foreground">
+      <div className="space-y-8">
+        <div className="pt-4">
+          <h2 className="text-3xl font-bold mb-3">Xin chào, {user?.name}!</h2>
+          <p className="text-muted-foreground text-lg">
             Chúc bạn có một ngày tuyệt vời
           </p>
         </div>
@@ -195,9 +195,13 @@ function DashboardHome() {
           streak={streak}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <EmotionStatsChart emotions={emotions} />
-          <RecentEmotions emotions={emotions} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+          <div className="min-h-0">
+            <EmotionStatsChart emotions={emotions} />
+          </div>
+          <div className="min-h-0">
+            <RecentEmotions emotions={emotions} />
+          </div>
         </div>
 
         {user?.tier === "free" && (
@@ -225,23 +229,21 @@ export default function UserDashboard() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="w-64 bg-card border-r border-border p-6">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold">EmoCare</h1>
-          <p className="text-sm text-muted-foreground">
-            {user?.tier === "gold" ? "Gold Member" : "Free Member"}
-          </p>
+      <aside className="w-64 bg-card border-r border-border flex flex-col">
+        <div className="flex-1 p-4">
+          <SidebarNav />
+          <div className="mt-4">
+            <button
+              onClick={logout}
+              className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Đăng xuất
+            </button>
+          </div>
         </div>
-        <SidebarNav />
-        <button
-          onClick={logout}
-          className="w-full mt-8 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
-        >
-          Đăng xuất
-        </button>
       </aside>
 
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-6">
         <Routes>
           <Route index element={<DashboardHome />} />
           <Route path="diary" element={<DiaryPage />} />

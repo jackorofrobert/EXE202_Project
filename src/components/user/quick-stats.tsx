@@ -10,17 +10,17 @@ export default function QuickStats({ totalEmotions, averageEmotion, streak }: Qu
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="bg-card rounded-lg p-4 border border-border">
-        <div className="text-sm text-muted-foreground mb-1">Tổng bản ghi</div>
-        <div className="text-2xl font-bold">{totalEmotions}</div>
+      <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+        <div className="text-sm text-muted-foreground mb-2">Tổng bản ghi</div>
+        <div className="text-3xl font-bold text-primary">{totalEmotions}</div>
       </div>
-      <div className="bg-card rounded-lg p-4 border border-border">
-        <div className="text-sm text-muted-foreground mb-1">Cảm xúc trung bình</div>
-        <div className="text-2xl font-bold">{emotionLabel}</div>
+      <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+        <div className="text-sm text-muted-foreground mb-2">Cảm xúc trung bình</div>
+        <div className="text-3xl font-bold text-primary">{emotionLabel}</div>
       </div>
-      <div className="bg-card rounded-lg p-4 border border-border">
-        <div className="text-sm text-muted-foreground mb-1">Chuỗi ngày liên tiếp</div>
-        <div className="text-2xl font-bold">{streak} ngày</div>
+      <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+        <div className="text-sm text-muted-foreground mb-2">Chuỗi ngày liên tiếp</div>
+        <div className="text-3xl font-bold text-primary">{streak} ngày</div>
       </div>
     </div>
   )

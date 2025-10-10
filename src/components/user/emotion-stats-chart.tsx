@@ -15,9 +15,9 @@ export default function EmotionStatsChart({ emotions }: EmotionStatsChartProps) 
   const emotionLabels = ["Rất tệ", "Tệ", "Bình thường", "Tốt", "Rất tốt"]
 
   return (
-    <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-      <h3 className="text-lg font-semibold mb-6">Thống kê cảm xúc</h3>
-      <div className="flex items-center justify-center mb-6">
+    <div className="bg-card rounded-lg p-6 shadow-sm border border-border h-full flex flex-col">
+      <h3 className="text-xl font-semibold mb-6">Thống kê cảm xúc</h3>
+      <div className="flex items-center justify-center mb-6 flex-1">
         <div className="relative w-48 h-48">
           <svg viewBox="0 0 100 100" className="transform -rotate-90">
             {emotionCounts.map((item, index) => {
@@ -44,20 +44,20 @@ export default function EmotionStatsChart({ emotions }: EmotionStatsChartProps) 
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-3xl font-bold">{total}</div>
-              <div className="text-xs text-muted-foreground">Bản ghi</div>
+              <div className="text-3xl font-bold text-primary">{total}</div>
+              <div className="text-sm text-muted-foreground">Bản ghi</div>
             </div>
           </div>
         </div>
       </div>
       <div className="space-y-2">
         {emotionCounts.map((item, index) => (
-          <div key={item.level} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[index] }} />
-              <span className="text-sm">{emotionLabels[index]}</span>
+          <div key={item.level} className="flex items-center justify-between py-2 px-3 rounded-lg bg-muted/30">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colors[index] }} />
+              <span className="text-sm font-medium">{emotionLabels[index]}</span>
             </div>
-            <span className="text-sm font-medium">
+            <span className="text-sm font-semibold">
               {item.count} {total > 0 && `(${((item.count / total) * 100).toFixed(1)}%)`}
             </span>
           </div>

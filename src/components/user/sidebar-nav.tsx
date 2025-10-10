@@ -1,14 +1,20 @@
 "use client"
 
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
 import { Badge } from "../ui/badge"
+import Logo from "../ui/logo"
 import { CrownIcon } from "lucide-react"
 
 export default function SidebarNav() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const isGoldUser = user?.tier === "gold"
+
+  const handleLogoClick = () => {
+    navigate("/dashboard")
+  }
 
   const navItems = [
     { path: "/dashboard", label: "Trang chủ", icon: "🏠", available: true },
@@ -21,10 +27,15 @@ export default function SidebarNav() {
 
   return (
     <div className="space-y-6">
+      {/* Logo with Gold Member */}
+      <div className="px-4 py-4 border-b border-border/50">
+        <Logo size="md" showGoldMember={isGoldUser} clickable onClick={handleLogoClick} />
+      </div>
+
       {/* User Info */}
-      <div className="p-4 bg-gray-50 rounded-lg">
+      <div className="p-4 bg-muted/30 rounded-lg mx-2">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200">
+          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-border">
             <img
               src={user?.avatar || "/placeholder-user.jpg"}
               alt="Avatar"
@@ -36,13 +47,13 @@ export default function SidebarNav() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm truncate">{user?.name || "User"}</h3>
-            <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
         </div>
         <Badge 
           variant="secondary" 
           className={`text-xs w-full justify-center ${
-            isGoldUser ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+            isGoldUser ? 'bg-yellow-100 text-yellow-800' : 'bg-muted text-muted-foreground'
           }`}
         >
           <CrownIcon className="h-3 w-3 mr-1" />
@@ -51,7 +62,7 @@ export default function SidebarNav() {
       </div>
 
       {/* Navigation */}
-      <nav className="space-y-2">
+      <nav className="space-y-1 px-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path
           const isDisabled = !item.available
@@ -60,7 +71,7 @@ export default function SidebarNav() {
             <Link
               key={item.path}
               to={isDisabled ? "#" : item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                 isActive
                   ? "bg-primary text-primary-foreground"
                   : isDisabled
@@ -69,8 +80,8 @@ export default function SidebarNav() {
               }`}
               onClick={(e) => isDisabled && e.preventDefault()}
             >
-              <span className="text-xl">{item.icon}</span>
-              <span className="font-medium">{item.label}</span>
+              <span className="text-lg">{item.icon}</span>
+              <span className="font-medium text-sm">{item.label}</span>
               {isDisabled && (
                 <span className="ml-auto text-xs bg-accent text-accent-foreground px-2 py-1 rounded">Gold</span>
               )}

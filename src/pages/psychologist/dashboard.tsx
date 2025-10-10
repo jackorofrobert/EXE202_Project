@@ -18,39 +18,42 @@ export default function PsychologistDashboard() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <aside className="w-64 bg-card border-r border-border p-6">
-        <div className="mb-8">
-          <h1 className="text-xl font-bold">EmoCare</h1>
-          <p className="text-sm text-muted-foreground">Bác sĩ tâm lý</p>
+      <aside className="w-64 bg-card border-r border-border flex flex-col">
+        <div className="flex-1 p-4">
+          <div className="text-center mb-6">
+            <h1 className="text-xl font-bold text-primary">Psychologist Dashboard</h1>
+          </div>
+
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                  }`}
+                >
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="font-medium text-sm">{item.label}</span>
+                </Link>
+              )
+            })}
+          </nav>
+          
+          <div className="mt-4">
+            <button
+              onClick={logout}
+              className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Đăng xuất
+            </button>
+          </div>
         </div>
-
-        <nav className="space-y-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-                }`}
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-
-        <button
-          onClick={logout}
-          className="w-full mt-8 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
-        >
-          Đăng xuất
-        </button>
       </aside>
 
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-6">
         <Routes>
           <Route index element={<PsychologistAppointments />} />
           <Route path="chat" element={<PsychologistChatPage />} />

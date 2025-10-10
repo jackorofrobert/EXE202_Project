@@ -5,6 +5,7 @@ import type React from "react"
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
+import Logo from "../../components/ui/logo"
 
 export default function RegisterPage() {
   const [name, setName] = useState("")
@@ -15,6 +16,10 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
+
+  const handleLogoClick = () => {
+    navigate("/")
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,7 +51,11 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 px-4">
       <div className="w-full max-w-md">
         <div className="bg-card rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-center mb-2">Đăng ký</h1>
+          <div className="flex justify-center items-center gap-3 mb-6" onClick={handleLogoClick}>
+            <Logo size="md" clickable={false} />
+            <h1 className="text-3xl font-bold text-foreground">EmoCare</h1>
+          </div>
+          <h2 className="text-2xl font-bold text-center mb-2">Đăng ký</h2>
           <p className="text-center text-muted-foreground mb-6">Tạo tài khoản EmoCare mới</p>
 
           {error && (
