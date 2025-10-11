@@ -36,7 +36,13 @@ function DashboardHome() {
         new Date(emotion.createdAt).toDateString() === today
       );
       
-      if (!hasTodayEmotion) {
+      // Check if user has skipped today
+      const skipKey = `emotion_skip_${user.id}`;
+      const lastSkipDate = localStorage.getItem(skipKey);
+      const hasSkippedToday = lastSkipDate === today;
+      
+      // Only show modal if user hasn't entered emotion AND hasn't skipped today
+      if (!hasTodayEmotion && !hasSkippedToday) {
         setShowEmotionCheck(true);
       }
     } catch (error) {
@@ -109,6 +115,20 @@ function DashboardHome() {
     }
   };
 
+  const handleEmotionSkip = () => {
+    if (!user?.id) return;
+    
+    // Save skip status to localStorage
+    const today = new Date().toDateString();
+    const skipKey = `emotion_skip_${user.id}`;
+    localStorage.setItem(skipKey, today);
+    
+    // Close the modal
+    setShowEmotionCheck(false);
+    
+    console.log("Emotion check skipped for today");
+  };
+
   const calculateStreak = (emotions: EmotionEntry[]): number => {
     if (emotions.length === 0) return 0;
     
@@ -179,6 +199,7 @@ function DashboardHome() {
         isOpen={showEmotionCheck}
         onClose={() => setShowEmotionCheck(false)}
         onSubmit={handleEmotionSubmit}
+        onSkip={handleEmotionSkip}
       />
 
       <div className="space-y-8">

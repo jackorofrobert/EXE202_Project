@@ -9,9 +9,10 @@ interface EmotionCheckModalProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (level: EmotionLevel, note: string) => void
+  onSkip?: () => void
 }
 
-export default function EmotionCheckModal({ isOpen, onClose, onSubmit }: EmotionCheckModalProps) {
+export default function EmotionCheckModal({ isOpen, onClose, onSubmit, onSkip }: EmotionCheckModalProps) {
   const [emotionLevel, setEmotionLevel] = useState<EmotionLevel>(3)
   const [note, setNote] = useState("")
 
@@ -33,6 +34,15 @@ export default function EmotionCheckModal({ isOpen, onClose, onSubmit }: Emotion
   const handleClose = () => {
     resetForm()
     onClose()
+  }
+
+  const handleSkip = () => {
+    resetForm()
+    if (onSkip) {
+      onSkip()
+    } else {
+      onClose()
+    }
   }
 
   if (!isOpen) return null
@@ -88,7 +98,7 @@ export default function EmotionCheckModal({ isOpen, onClose, onSubmit }: Emotion
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={handleClose}
+              onClick={handleSkip}
               className="flex-1 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
             >
               Bỏ qua
