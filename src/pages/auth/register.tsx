@@ -40,8 +40,36 @@ export default function RegisterPage() {
     try {
       await register(email, password, name)
       navigate("/dashboard")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Đăng ký thất bại")
+    } catch (err: any) {
+      // Handle Firebase auth errors with user-friendly messages
+      let errorMessage = "Đăng ký thất bại. Vui lòng thử lại.";
+      
+      if (err?.code) {
+        switch (err.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = "Email này đã được sử dụng. Vui lòng chọn email khác.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "Email không hợp lệ.";
+            break;
+          case 'auth/weak-password':
+            errorMessage = "Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.";
+            break;
+          case 'auth/operation-not-allowed':
+            errorMessage = "Tính năng đăng ký tạm thời không khả dụng.";
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = "Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = "Quá nhiều lần thử đăng ký. Vui lòng thử lại sau.";
+            break;
+          default:
+            errorMessage = "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.";
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false)
     }

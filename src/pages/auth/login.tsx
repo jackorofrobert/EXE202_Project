@@ -35,8 +35,36 @@ export default function LoginPage() {
       } else {
         navigate("/dashboard");
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
+    } catch (err: any) {
+      // Handle Firebase auth errors with user-friendly messages
+      let errorMessage = "Đăng nhập thất bại. Vui lòng thử lại.";
+      
+      if (err?.code) {
+        switch (err.code) {
+          case 'auth/user-not-found':
+            errorMessage = "Không tìm thấy tài khoản với email này.";
+            break;
+          case 'auth/wrong-password':
+            errorMessage = "Mật khẩu không đúng.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "Email không hợp lệ.";
+            break;
+          case 'auth/user-disabled':
+            errorMessage = "Tài khoản đã bị vô hiệu hóa.";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = "Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau.";
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = "Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.";
+            break;
+          default:
+            errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

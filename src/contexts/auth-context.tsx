@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged((user) => {
+      console.log("Auth state changed:", user ? "User logged in" : "User logged out");
       setUser(user);
       setIsLoading(false);
     });
@@ -37,26 +38,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<User> => {
     try {
+      setIsLoading(true);
       const userData = await authService.login(email, password);
       setUser(userData);
+      console.log("Login successful:", userData.email);
       return userData;
     } catch (error: any) {
+      setIsLoading(false);
       throw new Error(error.message || "Email hoặc mật khẩu không đúng");
     }
   };
 
   const register = async (email: string, password: string, name: string) => {
     try {
+      setIsLoading(true);
       const userData = await authService.register(email, password, name);
       setUser(userData);
+      console.log("Registration successful:", userData.email);
     } catch (error: any) {
+      setIsLoading(false);
       throw new Error(error.message || "Đăng ký thất bại");
     }
   };
 
   const logout = async () => {
-    await authService.logout();
-    setUser(null);
+    try {
+      setIsLoading(true);
+      await authService.logout();
+      setUser(null);
+      console.log("Logout successful");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const refreshUser = async () => {
