@@ -3,6 +3,8 @@ import { AuthProvider } from "./contexts/auth-context"
 import ProtectedRoute from "./components/auth/protected-route"
 import LoginPage from "./pages/auth/login"
 import RegisterPage from "./pages/auth/register"
+import ForgotPasswordPage from "./pages/auth/forgot-password"
+import ChangePasswordPage from "./pages/auth/change-password"
 import LandingPage from "./pages/landing"
 import AdminDashboard from "./pages/admin/dashboard"
 import UserDashboard from "./pages/dashboard/home"
@@ -15,6 +17,15 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route 
+          path="/change-password" 
+          element={
+            <ProtectedRoute allowedRoles={["user", "admin", "psychologist"]}>
+              <ChangePasswordPage />
+            </ProtectedRoute>
+          } 
+        />
 
         <Route
           path="/admin/*"

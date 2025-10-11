@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../../components/ui/dialog"
@@ -9,11 +10,14 @@ import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Textarea } from "../../components/ui/textarea"
 import { Switch } from "../../components/ui/switch"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { useToast } from "../../hooks/use-toast"
+import { LockIcon, ShieldIcon } from "lucide-react"
 import type { Psychologist } from "../../types"
 
 export default function PsychologistProfile() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<Psychologist | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -119,72 +123,109 @@ export default function PsychologistProfile() {
         </Button>
       </div>
 
-      <div className="bg-card rounded-lg p-6 border border-border">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Thông tin cơ bản</h3>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium">Tên</Label>
-                <p className="text-sm text-muted-foreground">{profile.name}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Email</Label>
-                <p className="text-sm text-muted-foreground">{profile.email}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Chuyên môn</Label>
-                <p className="text-sm text-muted-foreground">{profile.specialization}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Kinh nghiệm</Label>
-                <p className="text-sm text-muted-foreground">{profile.experience} năm</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Thông tin nghề nghiệp</h3>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-sm font-medium">Trạng thái</Label>
-                <p className="text-sm text-muted-foreground">
-                  {profile.available ? "Có sẵn" : "Bận"}
-                </p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Đánh giá</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold">{profile.rating}</span>
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span
-                        key={star}
-                        className={`text-sm ${
-                          star <= Math.floor(profile.rating)
-                            ? 'text-yellow-400'
-                            : 'text-gray-300'
-                        }`}
-                      >
-                        ★
-                      </span>
-                    ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile Information */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Thông tin hồ sơ</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Thông tin cơ bản</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium">Tên</Label>
+                      <p className="text-sm text-muted-foreground">{profile.name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Email</Label>
+                      <p className="text-sm text-muted-foreground">{profile.email}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Chuyên môn</Label>
+                      <p className="text-sm text-muted-foreground">{profile.specialization}</p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Kinh nghiệm</Label>
+                      <p className="text-sm text-muted-foreground">{profile.experience} năm</p>
+                    </div>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    ({profile.totalRatings || 0} đánh giá)
-                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Thông tin nghề nghiệp</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-sm font-medium">Trạng thái</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {profile.available ? "Có sẵn" : "Bận"}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">Đánh giá</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-semibold">{profile.rating}</span>
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className={`text-sm ${
+                                star <= Math.floor(profile.rating)
+                                  ? 'text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          ({profile.totalRatings || 0} đánh giá)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+
+              {profile.bio && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-2">Giới thiệu</h3>
+                  <p className="text-sm text-muted-foreground">{profile.bio}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {profile.bio && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-2">Giới thiệu</h3>
-            <p className="text-sm text-muted-foreground">{profile.bio}</p>
-          </div>
-        )}
+        {/* Security Section */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldIcon className="h-5 w-5" />
+                Bảo mật tài khoản
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Quản lý mật khẩu và bảo mật tài khoản
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/change-password")}
+                  className="w-full"
+                >
+                  <LockIcon className="h-4 w-4 mr-2" />
+                  Thay đổi mật khẩu
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Profile Edit Modal */}

@@ -3,6 +3,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updatePassword,
+  sendPasswordResetEmail,
   type User as FirebaseUser,
 } from "firebase/auth"
 import { doc, setDoc, getDoc } from "firebase/firestore"
@@ -64,6 +66,21 @@ export const authService = {
     }
 
     return userDoc.data() as User
+  },
+
+  // Change password for current user
+  async changePassword(newPassword: string): Promise<void> {
+    const firebaseUser = auth.currentUser
+    if (!firebaseUser) {
+      throw new Error("Không có người dùng đang đăng nhập")
+    }
+    
+    await updatePassword(firebaseUser, newPassword)
+  },
+
+  // Send password reset email
+  async resetPassword(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email)
   },
 
   // Listen to auth state changes

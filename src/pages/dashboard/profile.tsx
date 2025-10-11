@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service"
 import { useToast } from "../../hooks/use-toast"
@@ -10,11 +11,12 @@ import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 import { Badge } from "../../components/ui/badge"
 import AvatarUpload from "../../components/user/avatar-upload"
-import { UserIcon, CrownIcon } from "lucide-react"
+import { UserIcon, CrownIcon, LockIcon, ShieldIcon } from "lucide-react"
 
 export default function UserProfile() {
   const { user, refreshUser } = useAuth()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
@@ -170,7 +172,7 @@ export default function UserProfile() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Avatar Section */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -184,6 +186,31 @@ export default function UserProfile() {
                 onAvatarChange={handleAvatarChange}
                 disabled={isSaving}
               />
+            </CardContent>
+          </Card>
+
+          {/* Security Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldIcon className="h-5 w-5" />
+                Bảo mật tài khoản
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Quản lý mật khẩu và bảo mật tài khoản
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/change-password")}
+                  className="w-full"
+                >
+                  <LockIcon className="h-4 w-4 mr-2" />
+                  Thay đổi mật khẩu
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

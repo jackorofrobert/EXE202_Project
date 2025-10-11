@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service"
 import Logo from "../../components/ui/logo"
@@ -12,10 +13,14 @@ import UserModal from "../../components/admin/user-modal"
 import PsychologistModal from "../../components/admin/psychologist-modal"
 import TransactionManagement from "../../components/admin/transaction-management"
 import AdminRatingsPage from "./ratings"
+import { Button } from "../../components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../components/ui/dropdown-menu"
+import { LockIcon, UserIcon, LogOutIcon } from "lucide-react"
 import type { AnalyticsData, User, Psychologist } from "../../types"
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [allUsers, setAllUsers] = useState<User[]>([])
   const [psychologists, setPsychologists] = useState<Psychologist[]>([])
@@ -174,12 +179,24 @@ export default function AdminDashboard() {
               <p className="text-sm text-muted-foreground">Xin chào, {user?.name}</p>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Đăng xuất
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <UserIcon className="h-4 w-4" />
+                {user?.name}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate("/change-password")}>
+                <LockIcon className="h-4 w-4 mr-2" />
+                Thay đổi mật khẩu
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={logout}>
+                <LogOutIcon className="h-4 w-4 mr-2" />
+                Đăng xuất
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

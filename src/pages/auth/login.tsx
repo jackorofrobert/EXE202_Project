@@ -131,7 +131,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 text-center text-sm">
+          <div className="mt-6 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors"
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
+
+          <div className="mt-4 text-center text-sm">
             <span className="text-gray-600">Chưa có tài khoản? </span>
             <Link
               to="/register"

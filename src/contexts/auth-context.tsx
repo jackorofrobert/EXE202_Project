@@ -18,6 +18,8 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  changePassword: (newPassword: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,6 +93,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const changePassword = async (newPassword: string) => {
+    try {
+      setIsLoading(true)
+      await authService.changePassword(newPassword)
+      console.log("Password changed successfully")
+    } catch (error: any) {
+      setIsLoading(false)
+      throw new Error(error.message || "Thay đổi mật khẩu thất bại")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const resetPassword = async (email: string) => {
+    try {
+      setIsLoading(true)
+      await authService.resetPassword(email)
+      console.log("Password reset email sent successfully")
+    } catch (error: any) {
+      setIsLoading(false)
+      throw new Error(error.message || "Gửi email reset mật khẩu thất bại")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -101,6 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         refreshUser,
+        changePassword,
+        resetPassword,
       }}
     >
       {children}
