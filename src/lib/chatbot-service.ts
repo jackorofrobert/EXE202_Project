@@ -1,4 +1,6 @@
 import type { UserTier } from "../types";
+import { GeminiService } from './gemini-service';
+import { ConversationService, type ChatMessage } from './conversation-service';
 
 interface ChatbotResponse {
   message: string;
@@ -35,22 +37,130 @@ const freeUserSuggestions = {
 
 export class ChatbotService {
   private userTier: UserTier;
-  private conversationHistory: string[] = [];
+  private userId: string;
+  private geminiService: GeminiService;
+  private conversationService: ConversationService;
+  private currentConversationId: string | null = null;
 
-  constructor(userTier: UserTier) {
+  constructor(userTier: UserTier, userId: string, geminiApiKey: string) {
     this.userTier = userTier;
+    this.userId = userId;
+    this.geminiService = new GeminiService(geminiApiKey);
+    this.conversationService = new ConversationService();
   }
 
   async sendMessage(message: string): Promise<ChatbotResponse> {
-    this.conversationHistory.push(message);
+    try {
+      // Create new conversation if none exists
+      if (!this.currentConversationId) {
+        const conversation = await this.conversationService.createConversation(this.userId);
+        this.currentConversationId = conversation.id;
+      }
 
-    // Simulate AI processing time
-    await new Promise((resolve) => setTimeout(resolve, 800));
+      // Add user message to conversation
+      const userMessage: ChatMessage = {
+        id: `msg_${Date.now()}`,
+        role: 'user',
+        content: message,
+        timestamp: new Date(),
+      };
 
-    if (this.userTier === "free") {
-      return this.getFreeUserResponse(message);
+      try {
+        await this.conversationService.addMessage(this.currentConversationId, userMessage);
+      } catch (error) {
+        // If adding message fails, create a new conversation
+        const newConversation = await this.conversationService.createConversation(this.userId);
+        this.currentConversationId = newConversation.id;
+        
+        // Try adding message again
+        await this.conversationService.addMessage(this.currentConversationId, userMessage);
+      }
+
+      // Get conversation history
+      const conversation = await this.conversationService.getConversation(this.currentConversationId);
+      if (!conversation) {
+        throw new Error('Conversation not found');
+      }
+
+      // Convert to Gemini format
+      const geminiHistory = this.conversationService.convertToGeminiFormat(conversation.messages.slice(0, -1)); // Exclude current message
+
+      // Generate response using Gemini
+      const aiResponse = await this.geminiService.generateResponse(
+        message,
+        geminiHistory,
+        this.userTier
+      );
+
+      // Add AI response to conversation
+      const aiMessage: ChatMessage = {
+        id: `msg_${Date.now() + 1}`,
+        role: 'assistant',
+        content: aiResponse,
+        timestamp: new Date(),
+      };
+
+      await this.conversationService.addMessage(this.currentConversationId, aiMessage);
+
+      // Update conversation title if it's the first message
+      if (conversation.messages.length === 1) {
+        const title = message.length > 30 ? message.substring(0, 30) + '...' : message;
+        await this.conversationService.updateConversationTitle(this.currentConversationId, title);
+      }
+
+      // Cleanup old conversations
+      await this.conversationService.cleanupOldConversations(this.userId);
+
+      return {
+        message: aiResponse,
+        suggestions: this.getSuggestions(),
+      };
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      
+      // Fallback to old system for free users
+      if (this.userTier === 'free') {
+        return this.getFreeUserResponse(message);
+      }
+      
+      throw new Error('Không thể kết nối với AI. Vui lòng thử lại sau.');
+    }
+  }
+
+  async getConversations() {
+    return await this.conversationService.getConversations(this.userId);
+  }
+
+  async switchConversation(conversationId: string) {
+    this.currentConversationId = conversationId;
+  }
+
+  async deleteConversation(conversationId: string) {
+    await this.conversationService.deleteConversation(conversationId);
+    if (this.currentConversationId === conversationId) {
+      this.currentConversationId = null;
+    }
+  }
+
+  async createNewConversation() {
+    this.currentConversationId = null;
+  }
+
+  private getSuggestions(): string[] {
+    if (this.userTier === 'free') {
+      return [
+        "☕ Quán cà phê",
+        "🍽️ Nhà hàng", 
+        "🎯 Hoạt động giải trí",
+        "💆 Giảm stress",
+      ];
     } else {
-      return this.getGoldUserResponse(message);
+      return [
+        "💭 Tôi đang cảm thấy stress",
+        "😔 Tôi cảm thấy buồn",
+        "😰 Tôi lo lắng",
+        "🧘 Kỹ thuật thư giãn",
+      ];
     }
   }
 

@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase/config'
 import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, BookingStatus, Transaction, TransactionStatus, ChatMessage } from '../types'
+import type { Conversation } from './conversation-service'
 
 export class FirestoreService {
   // User operations
@@ -721,6 +722,92 @@ export class FirestoreService {
       } as Booking))
     } catch (error) {
       console.error('Error getting all bookings:', error)
+      throw error
+    }
+  }
+
+  // Conversation operations
+  static async createConversation(conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<any> {
+    try {
+      const docRef = await addDoc(collection(db, 'conversations'), {
+        ...conversation,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      return docRef
+    } catch (error) {
+      console.error('Error creating conversation:', error)
+      throw error
+    }
+  }
+
+  static async getUserConversations(userId: string): Promise<Conversation[]> {
+    try {
+      const q = query(
+        collection(db, 'conversations'),
+        where('userId', '==', userId)
+      )
+      const snapshot = await getDocs(q)
+      const conversations = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+        messages: doc.data().messages?.map((msg: any) => ({
+          ...msg,
+          timestamp: msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp)
+        })) || [],
+      } as Conversation))
+      
+      // Sort by updatedAt in JavaScript to avoid index requirement
+      return conversations.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+    } catch (error) {
+      console.error('Error getting user conversations:', error)
+      throw error
+    }
+  }
+
+  static async getConversation(conversationId: string): Promise<Conversation | null> {
+    try {
+      const conversationDoc = await getDoc(doc(db, 'conversations', conversationId))
+      if (conversationDoc.exists()) {
+        const data = conversationDoc.data()
+        return {
+          id: conversationDoc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          messages: data.messages?.map((msg: any) => ({
+            ...msg,
+            timestamp: msg.timestamp?.toDate ? msg.timestamp.toDate() : new Date(msg.timestamp)
+          })) || [],
+        } as Conversation
+      }
+      return null
+    } catch (error) {
+      console.error('Error getting conversation:', error)
+      throw error
+    }
+  }
+
+  static async updateConversation(conversationId: string, updates: Partial<Conversation>): Promise<void> {
+    try {
+      const conversationRef = doc(db, 'conversations', conversationId)
+      await updateDoc(conversationRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      })
+    } catch (error) {
+      console.error('Error updating conversation:', error)
+      throw error
+    }
+  }
+
+  static async deleteConversation(conversationId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'conversations', conversationId))
+    } catch (error) {
+      console.error('Error deleting conversation:', error)
       throw error
     }
   }
