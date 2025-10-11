@@ -30,7 +30,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged((user) => {
-      console.log("Auth state changed:", user ? "User logged in" : "User logged out");
       setUser(user);
       setIsLoading(false);
     });
@@ -43,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const userData = await authService.login(email, password);
       setUser(userData);
-      console.log("Login successful:", userData.email);
       return userData;
     } catch (error: any) {
       setIsLoading(false);
@@ -56,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const userData = await authService.register(email, password, name);
       setUser(userData);
-      console.log("Registration successful:", userData.email);
     } catch (error: any) {
       setIsLoading(false);
       throw new Error(error.message || "Đăng ký thất bại");
@@ -68,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       await authService.logout();
       setUser(null);
-      console.log("Logout successful");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -97,7 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       await authService.changePassword(newPassword)
-      console.log("Password changed successfully")
     } catch (error: any) {
       setIsLoading(false)
       throw new Error(error.message || "Thay đổi mật khẩu thất bại")
@@ -110,7 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       await authService.resetPassword(email)
-      console.log("Password reset email sent successfully")
     } catch (error: any) {
       setIsLoading(false)
       throw new Error(error.message || "Gửi email reset mật khẩu thất bại")

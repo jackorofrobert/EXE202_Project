@@ -60,8 +60,6 @@ export class FirestoreService {
 
   static async getEmotionEntries(userId: string, limitCount?: number): Promise<EmotionEntry[]> {
     try {
-      console.log('FirestoreService: Getting emotion entries for user:', userId);
-      
       // Query đơn giản hơn - chỉ filter theo userId
       let q = query(
         collection(db, 'emotion_entries'),
@@ -73,7 +71,6 @@ export class FirestoreService {
       }
 
       const snapshot = await getDocs(q)
-      console.log('FirestoreService: Query result:', snapshot.docs.length, 'documents');
       
       // Sort trong JavaScript thay vì Firestore
       const result = snapshot.docs.map(doc => ({
@@ -85,7 +82,6 @@ export class FirestoreService {
       // Sort by createdAt descending
       result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       
-      console.log('FirestoreService: Processed result:', result);
       return result
     } catch (error) {
       console.error('Error getting emotion entries:', error)
@@ -312,13 +308,6 @@ export class FirestoreService {
         count: emotionsSnapshot.docs.filter(doc => doc.data().level === level).length
       }))
 
-      console.log("Real Firestore data:")
-      console.log("- Total users:", totalUsers)
-      console.log("- Active users:", activeUsers)
-      console.log("- Total psychologists:", totalPsychologists)
-      console.log("- Total bookings:", totalBookings)
-      console.log("- Emotion distribution:", emotionDistribution)
-
       return {
         totalUsers,
         activeUsers,
@@ -352,15 +341,12 @@ export class FirestoreService {
   // Chat operations
   static async addChatMessage(conversationId: string, messageData: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<string> {
     try {
-      console.log('FirestoreService - addChatMessage called with:', { conversationId, messageData })
-      
       const docRef = await addDoc(collection(db, 'chat_messages'), {
         ...messageData,
         conversationId,
         createdAt: serverTimestamp()
       })
       
-      console.log('FirestoreService - Message added with ID:', docRef.id)
       return docRef.id
     } catch (error) {
       console.error('Error adding chat message:', error)
@@ -413,8 +399,6 @@ export class FirestoreService {
     conversationId: string, 
     callback: (messages: ChatMessage[]) => void
   ): Unsubscribe {
-    console.log('FirestoreService - subscribeToChatMessages for conversationId:', conversationId)
-    
     // Simplified query without orderBy to avoid index requirement
     const q = query(
       collection(db, 'chat_messages'),
@@ -422,15 +406,11 @@ export class FirestoreService {
     )
 
     return onSnapshot(q, (snapshot) => {
-      console.log('FirestoreService - onSnapshot triggered, docs count:', snapshot.docs.length)
-      
       const messages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
       })) as ChatMessage[]
-      
-      console.log('FirestoreService - Processed messages:', messages)
       
       // Sort messages by createdAt in JavaScript
       messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())

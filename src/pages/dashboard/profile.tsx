@@ -28,7 +28,6 @@ export default function UserProfile() {
   const loadProfile = useCallback(async () => {
     if (!user?.id) return
     
-    console.log("Profile - Loading profile for user:", user)
     setIsLoading(true)
     try {
       // Use user from context first, then fetch from Firestore if needed
@@ -38,26 +37,14 @@ export default function UserProfile() {
         avatar: user.avatar || ""
       })
       
-      console.log("Profile - Set formData from context:", {
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar
-      })
-      
       // Also fetch latest data from Firestore
       const userData = await FirestoreService.getUser(user.id)
-      console.log("Profile - Fetched userData from Firestore:", userData)
       
       if (userData) {
         setFormData({
           name: userData.name || user.name || "",
           email: userData.email || user.email || "",
           avatar: userData.avatar || user.avatar || ""
-        })
-        console.log("Profile - Updated formData from Firestore:", {
-          name: userData.name || user.name,
-          email: userData.email || user.email,
-          avatar: userData.avatar || user.avatar
         })
       }
     } catch (error) {

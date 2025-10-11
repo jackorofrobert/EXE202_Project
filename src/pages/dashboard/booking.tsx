@@ -66,11 +66,8 @@ export default function BookingPage() {
   }, [loadPsychologists, loadBookings])
 
   const handleBookClick = (psychologist: Psychologist) => {
-    console.log('BookingPage - handleBookClick called with:', psychologist)
-    
     // Kiểm tra tier gold
     if (user?.tier !== 'gold') {
-      console.log('BookingPage - User is not gold tier:', user?.tier)
       toast({
         title: "Cần nâng cấp Gold",
         description: "Chỉ thành viên Gold mới có thể đặt lịch tư vấn. Vui lòng nâng cấp để sử dụng tính năng này.",
@@ -79,7 +76,6 @@ export default function BookingPage() {
       return
     }
 
-    console.log('BookingPage - Opening booking modal for:', psychologist.name)
     setSelectedPsychologist(psychologist)
     setShowBookingModal(true)
   }

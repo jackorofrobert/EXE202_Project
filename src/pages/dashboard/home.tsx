@@ -52,15 +52,12 @@ function DashboardHome() {
 
   const loadEmotions = useCallback(async () => {
     if (!user?.id) {
-      console.log("No user ID available");
       return;
     }
     
-    console.log("Loading emotions for user:", user.id);
     try {
       // Load tất cả emotions để check chính xác
       const allEmotionEntries = await FirestoreService.getEmotionEntries(user.id);
-      console.log("Loaded emotions:", allEmotionEntries);
       setAllEmotions(allEmotionEntries);
       
       // Chỉ hiển thị 10 entries gần nhất trên dashboard
@@ -125,8 +122,6 @@ function DashboardHome() {
     
     // Close the modal
     setShowEmotionCheck(false);
-    
-    console.log("Emotion check skipped for today");
   };
 
   const calculateStreak = (emotions: EmotionEntry[]): number => {

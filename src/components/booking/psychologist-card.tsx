@@ -42,7 +42,6 @@ export default function PsychologistCard({ psychologist, onBook }: PsychologistC
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            console.log('PsychologistCard - Button clicked for:', psychologist.name)
             onBook(psychologist)
           }}
           disabled={!psychologist.available}

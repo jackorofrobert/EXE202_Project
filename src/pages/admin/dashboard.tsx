@@ -53,11 +53,6 @@ export default function AdminDashboard() {
         FirestoreService.getAnalyticsTrends()
       ])
       
-      console.log("Analytics data:", analyticsData)
-      console.log("Users data:", usersData)
-      console.log("Psychologists data:", psychologistsData)
-      console.log("Trends data:", trendsData)
-      
       setAnalytics(analyticsData)
       setAllUsers(usersData)
       setPsychologists(psychologistsData)
@@ -138,10 +133,6 @@ export default function AdminDashboard() {
 
   const userGrowthData = calculateUserGrowth()
   const bookingStatsData = calculateBookingGrowth()
-
-  console.log("User growth data:", userGrowthData)
-  console.log("Booking stats data:", bookingStatsData)
-  console.log("Emotion distribution:", analytics?.emotionDistribution)
 
   // Modal handlers
   const handleEditUser = (user: User) => {

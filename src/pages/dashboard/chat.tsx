@@ -57,11 +57,9 @@ export default function ChatPage() {
 
     try {
       const conversationId = `${user?.id}_${psychologistId}`
-      console.log('User chat - Setting up listener for conversationId:', conversationId)
       
       // Subscribe to real-time updates
       const unsubscribe = FirestoreService.subscribeToChatMessages(conversationId, (newMessages) => {
-        console.log('User chat - Received messages:', newMessages)
         setMessages(newMessages)
       })
       
@@ -137,8 +135,6 @@ export default function ChatPage() {
     try {
       // Ensure consistent conversationId format
       const conversationId = `${user.id}_${selectedPsychologist.id}`
-      console.log('User chat - Sending message to conversationId:', conversationId)
-      console.log('User chat - Message content:', newMessage.trim())
       
       await FirestoreService.addChatMessage(conversationId, {
         senderId: user.id,
@@ -149,7 +145,6 @@ export default function ChatPage() {
       })
 
       setNewMessage("")
-      console.log('User chat - Message sent successfully')
       // Messages will be updated automatically via real-time listener
     } catch (error) {
       console.error("Error sending message:", error)
