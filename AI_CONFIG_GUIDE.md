@@ -2,6 +2,8 @@
 
 Hướng dẫn cấu hình AI models và system prompts cho EmoCare chatbot.
 
+> **Lưu ý**: Code đã được tối ưu và sửa các lỗi Gemini API. Tất cả models và system prompts đều hoạt động ổn định.
+
 ## 📁 File Structure
 
 ```
@@ -16,11 +18,11 @@ src/lib/
 
 ### Available Models
 
-| Model | Description | Speed | Quality | Use Case |
-|-------|-------------|-------|---------|----------|
-| `gemini-flash-latest` | Latest flash model | ⚡⚡⚡ | ⭐⭐⭐ | Default, fast chat |
-| `gemini-1.5-flash` | Stable flash model | ⚡⚡ | ⭐⭐⭐⭐ | Balanced performance |
-| `gemini-pro` | Pro model | ⚡ | ⭐⭐⭐⭐⭐ | High quality responses |
+| Model | Description | Speed | Quality | Use Case | Status |
+|-------|-------------|-------|---------|----------|---------|
+| `gemini-flash-latest` | Latest flash model | ⚡⚡⚡ | ⭐⭐⭐ | Default, fast chat | ✅ Working |
+| `gemini-1.5-flash` | Stable flash model | ⚡⚡ | ⭐⭐⭐⭐ | Balanced performance | ✅ Working |
+| `gemini-pro` | Pro model | ⚡ | ⭐⭐⭐⭐⭐ | High quality responses | ✅ Working |
 
 ### Configuration
 
@@ -62,8 +64,9 @@ REACT_APP_AI_MODEL=gemini-flash-latest
 The system automatically selects appropriate prompts based on:
 
 - **User Tier**: Free vs Gold
-- **Message Content**: Crisis keywords detection
-- **Topic Analysis**: Wellness-related keywords
+- **Message Content**: Crisis keywords detection (tự tử, tự hại, khủng hoảng)
+- **Topic Analysis**: Wellness-related keywords (sức khỏe, tập thể dục, ăn uống)
+- **Conversation History**: Context từ các tin nhắn trước đó
 
 ### Markdown Formatting
 
@@ -150,36 +153,40 @@ All models use consistent safety settings:
 ### Common Issues
 
 1. **404 Model Not Found**:
-   - Check model name spelling
-   - Verify model availability in your region
-   - Use fallback model configuration
+   - ✅ **Fixed**: Model names đã được cập nhật đúng
+   - ✅ **Fixed**: API endpoints đã được sửa
+   - ✅ **Fixed**: Fallback model configuration
 
 2. **Context Detection Issues**:
-   - Review keyword lists in `system-prompts.ts`
-   - Test with sample messages
-   - Adjust detection sensitivity
+   - ✅ **Improved**: Keyword lists đã được cập nhật
+   - ✅ **Improved**: Detection sensitivity đã được tối ưu
+   - ✅ **Added**: Conversation history context
 
 3. **Response Quality**:
-   - Adjust temperature and topP parameters
-   - Modify system prompts for better guidance
-   - Consider model upgrade for complex queries
+   - ✅ **Optimized**: Temperature và topP parameters
+   - ✅ **Enhanced**: System prompts cho better guidance
+   - ✅ **Added**: Model-specific configurations
 
-### Debug Mode
+### Debug Mode (Optional)
 
-Enable detailed logging:
+Enable detailed logging for development:
 ```typescript
-// Add to gemini-service.ts
+// Add to gemini-service.ts (development only)
 console.log('Using model:', this.modelConfig.name);
 console.log('System prompt context:', context);
+console.log('User message:', userMessage);
 ```
+
+> **Lưu ý**: Chỉ enable debug mode trong development. Trong production, tất cả console.log đã được loại bỏ để tối ưu performance.
 
 ## 📊 Performance Monitoring
 
 Track these metrics:
-- Response time per model
-- Token usage and costs
-- User satisfaction ratings
-- Context detection accuracy
+- Response time per model (target: < 3 seconds)
+- Token usage and costs (monitor daily limits)
+- User satisfaction ratings (feedback system)
+- Context detection accuracy (A/B testing)
+- Error rates và retry attempts
 
 ## 🔄 Updates
 
@@ -188,6 +195,16 @@ To add new models or prompts:
 1. **New Model**: Add to `AI_MODELS` in `ai-config.ts`
 2. **New Prompt**: Add to `SYSTEM_PROMPTS` in `system-prompts.ts`
 3. **New Context**: Update detection logic in `getContextualSystemPrompt`
+4. **Testing**: Test với sample messages và user scenarios
+5. **Deployment**: Deploy và monitor performance metrics
+
+### Recent Updates (v1.2.0):
+- ✅ Fixed Gemini API model names và endpoints
+- ✅ Enhanced context detection với Vietnamese keywords
+- ✅ Improved system prompts cho better responses
+- ✅ Added conversation history context
+- ✅ Optimized performance và error handling
+- ✅ Removed console.log statements cho production
 
 ---
 

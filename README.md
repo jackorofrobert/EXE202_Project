@@ -34,10 +34,11 @@ pnpm install
 - Bật Authentication với Email/Password
 - Tạo Firestore database
 - Copy Firebase config vào file `.env` (xem `.env.example`)
-- Xem chi tiết trong `FIREBASE_SETUP.md`
+- Xem chi tiết trong `SETUP.md`
 
 ### 4. Cấu hình Firestore Indexes
-- Xem `FIRESTORE_INDEX_SETUP.md` để cấu hình indexes cần thiết
+- Xem `SETUP.md` để cấu hình indexes cần thiết (tùy chọn)
+- Code đã được tối ưu để không cần indexes phức tạp
 
 ### 5. Chạy ứng dụng
 ```bash
@@ -70,7 +71,12 @@ src/
 ├── hooks/               # Custom React hooks
 ├── lib/                 # Utilities and services
 │   ├── firebase/       # Firebase configuration & services
-│   ├── api/            # API client & endpoints
+│   ├── ai-config.ts    # AI model configuration
+│   ├── system-prompts.ts # AI system prompts
+│   ├── gemini-service.ts # Gemini AI service
+│   ├── chatbot-service.ts # Main chatbot service
+│   ├── conversation-service.ts # Conversation management
+│   ├── firestore-service.ts # Firestore operations
 │   └── utils.ts        # Utility functions
 ├── pages/              # Page components
 │   ├── admin/          # Admin dashboard pages
@@ -118,27 +124,31 @@ src/
 - ✅ Nhật ký cảm xúc với ghi chú
 
 ### 🤖 Chatbot AI với Gemini
-- ✅ **Free Tier**: Chatbot cơ bản với gợi ý địa điểm
+- ✅ **Free Tier**: Chatbot cơ bản với gợi ý địa điểm và hoạt động
 - ✅ **Gold Tier**: Chatbot AI Gemini với system prompt chuyên nghiệp
 - ✅ **Conversation Management**: Lưu và quản lý các cuộc trò chuyện
 - ✅ **Tạo cuộc trò chuyện mới**: Mỗi lần hỏi tạo section riêng
 - ✅ **Xem và xóa**: Quản lý conversation history
 - ✅ **Giới hạn thông minh**: Tự động cleanup conversations cũ
+- ✅ **Context Detection**: Tự động chọn system prompt phù hợp
+- ✅ **Markdown Support**: Hiển thị response với định dạng đẹp
 - ✅ Suggestion chips cho câu hỏi thường gặp
 - ✅ Upgrade prompt cho free users
 
 ### 📅 Hệ thống Đặt lịch
-- ✅ Xem danh sách bác sĩ tâm lý
-- ✅ Đặt lịch theo khung giờ có sẵn
+- ✅ Xem danh sách bác sĩ tâm lý với thông tin chi tiết
+- ✅ Đặt lịch theo khung giờ có sẵn (chỉ Gold users)
 - ✅ Quản lý lịch hẹn (User & Psychologist)
-- ✅ Calendar view và list view
+- ✅ Trạng thái booking: pending, confirmed, completed, cancelled
+- ✅ Đánh giá và nhận xét sau khi hoàn thành
 - ✅ Thông báo và reminders
 
 ### 💬 Chat trực tiếp
 - ✅ Chat real-time giữa User và Psychologist
-- ✅ Chỉ dành cho Gold users
-- ✅ Quản lý cuộc trò chuyện
-- ✅ Unread message count
+- ✅ Chỉ dành cho Gold users với booking đã xác nhận
+- ✅ Quản lý cuộc trò chuyện theo psychologist
+- ✅ Unread message count và notifications
+- ✅ Message history và timestamps
 
 ### 📝 Nhật ký cá nhân
 - ✅ Viết và lưu trữ nhật ký
@@ -152,18 +162,20 @@ src/
 - ✅ Quản lý Gold membership
 
 ### 📈 Admin Dashboard
-- ✅ Analytics tổng quan
-- ✅ User growth charts
-- ✅ Emotion trends
-- ✅ Booking statistics
+- ✅ Analytics tổng quan với real-time data
+- ✅ User growth charts và trends
+- ✅ Emotion distribution và statistics
+- ✅ Booking statistics và management
 - ✅ Quản lý users và psychologists
-- ✅ Transaction management
+- ✅ Transaction management và approval
+- ✅ Rating system và feedback
 
 ### 💳 Thanh toán & Membership
-- ✅ Upgrade từ Free lên Gold
-- ✅ Payment integration
-- ✅ Gold membership benefits
-- ✅ Expiration tracking
+- ✅ Upgrade từ Free lên Gold với payment integration
+- ✅ Gold membership benefits và features
+- ✅ Expiration tracking và renewal
+- ✅ Transaction history và management
+- ✅ Admin approval system cho payments
 
 ## 🔧 Tính năng kỹ thuật
 
@@ -184,9 +196,10 @@ src/
 ### 📱 Performance
 - ✅ Code splitting và lazy loading
 - ✅ Optimized images với Cloudinary
-- ✅ Efficient state management
-- ✅ Real-time updates với Firestore
-- ✅ Caching strategies
+- ✅ Efficient state management với React Context
+- ✅ Real-time updates với Firestore listeners
+- ✅ Caching strategies và error handling
+- ✅ Optimized Firestore queries (không cần complex indexes)
 
 ## 🚀 Deployment
 
