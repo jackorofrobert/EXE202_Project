@@ -12,6 +12,7 @@ import BookingStatsChart from "../../components/admin/booking-stats-chart"
 import UserModal from "../../components/admin/user-modal"
 import PsychologistModal from "../../components/admin/psychologist-modal"
 import TransactionManagement from "../../components/admin/transaction-management"
+import VoucherManagement from "../../components/admin/voucher-management"
 import AdminRatingsPage from "./ratings"
 import { Button } from "../../components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../components/ui/dropdown-menu"
@@ -31,7 +32,7 @@ export default function AdminDashboard() {
     bookingGrowth: number
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists' | 'transactions' | 'ratings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists' | 'transactions' | 'vouchers' | 'ratings'>('overview')
   
   // Modal states
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
@@ -233,6 +234,16 @@ export default function AdminDashboard() {
             }`}
           >
             Giao dịch
+          </button>
+          <button
+            onClick={() => setActiveTab('vouchers')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'vouchers'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Voucher
           </button>
           <button
             onClick={() => setActiveTab('ratings')}
@@ -487,6 +498,10 @@ export default function AdminDashboard() {
 
         {activeTab === 'transactions' && (
           <TransactionManagement />
+        )}
+
+        {activeTab === 'vouchers' && (
+          <VoucherManagement />
         )}
 
         {activeTab === 'ratings' && (

@@ -6,7 +6,6 @@ import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { Textarea } from "../../components/ui/textarea"
 import { Label } from "../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Checkbox } from "../../components/ui/checkbox"
 import { FirestoreService } from "../../lib/firestore-service"
 import { useToast } from "../../hooks/use-toast"
@@ -25,10 +24,6 @@ export default function TransactionManagement() {
   const [itemsPerPage] = useState(10)
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadTransactions()
-  }, [])
-
   const loadTransactions = useCallback(async () => {
     try {
       const data = await FirestoreService.getTransactions()
@@ -44,6 +39,10 @@ export default function TransactionManagement() {
       setLoading(false)
     }
   }, [toast])
+
+  useEffect(() => {
+    loadTransactions()
+  }, [loadTransactions])
 
   const getFilteredTransactions = () => {
     if (activeTab === "all") {
@@ -363,7 +362,17 @@ export default function TransactionManagement() {
                             <h3 className="font-semibold">{getTypeText(transaction.type, transaction.planType)}</h3>
                             <p className="text-sm text-gray-600">
                               {transaction.amount.toLocaleString('vi-VN')} VND
+                              {transaction.originalAmount && transaction.originalAmount !== transaction.amount && (
+                                <span className="text-green-600 ml-2">
+                                  (Giảm {transaction.discountAmount?.toLocaleString('vi-VN')} VND)
+                                </span>
+                              )}
                             </p>
+                            {transaction.voucherCode && (
+                              <p className="text-xs text-blue-600">
+                                Voucher: {transaction.voucherCode}
+                              </p>
+                            )}
                             <p className="text-xs text-gray-500">
                               {new Date(transaction.createdAt).toLocaleString('vi-VN')}
                             </p>
@@ -438,7 +447,26 @@ export default function TransactionManagement() {
                 <div>
                   <Label className="text-sm font-medium">Số tiền</Label>
                   <p className="font-semibold">{selectedTransaction.amount.toLocaleString('vi-VN')} VND</p>
+                  {selectedTransaction.originalAmount && selectedTransaction.originalAmount !== selectedTransaction.amount && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-sm text-gray-600">
+                        Giá gốc: {selectedTransaction.originalAmount.toLocaleString('vi-VN')} VND
+                      </p>
+                      <p className="text-sm text-green-600">
+                        Giảm giá: {selectedTransaction.discountAmount?.toLocaleString('vi-VN')} VND
+                      </p>
+                    </div>
+                  )}
                 </div>
+
+                {selectedTransaction.voucherCode && (
+                  <div>
+                    <Label className="text-sm font-medium">Mã voucher</Label>
+                    <p className="font-mono bg-gray-100 px-2 py-1 rounded text-sm">
+                      {selectedTransaction.voucherCode}
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <Label className="text-sm font-medium">Trạng thái</Label>

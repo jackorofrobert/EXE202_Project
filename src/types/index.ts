@@ -81,6 +81,8 @@ export interface Rating {
 
 export type TransactionStatus = "pending" | "approved" | "rejected"
 export type TransactionType = "upgrade_to_gold"
+export type VoucherStatus = "active" | "inactive" | "expired"
+export type VoucherType = "percentage" | "fixed_amount"
 
 export interface Transaction {
   id: string
@@ -91,8 +93,39 @@ export interface Transaction {
   paymentProof?: string
   adminNotes?: string
   planType?: "monthly" | "yearly"
+  voucherCode?: string
+  originalAmount?: number
+  discountAmount?: number
   createdAt: string
   updatedAt: string
+}
+
+export interface Voucher {
+  id: string
+  code: string
+  name: string
+  description?: string
+  type: VoucherType
+  value: number // percentage (1-100) or fixed amount
+  minOrderAmount?: number
+  maxDiscountAmount?: number
+  usageLimit?: number
+  usedCount: number
+  status: VoucherStatus
+  validFrom: string
+  validTo: string
+  createdAt: string
+  updatedAt: string
+  createdBy: string // admin user ID
+}
+
+export interface VoucherUsage {
+  id: string
+  voucherId: string
+  userId: string
+  transactionId: string
+  discountAmount: number
+  usedAt: string
 }
 
 export interface AnalyticsData {

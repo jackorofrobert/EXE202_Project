@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Badge } from "../../components/ui/badge"
 import { Separator } from "../../components/ui/separator"
 import { Label } from "../../components/ui/label"
+import { Input } from "../../components/ui/input"
 import FileUpload from "../../components/ui/file-upload"
 import { FirestoreService } from "../../lib/firestore-service"
 import { useAuth } from "../../contexts/auth-context"
 import { useToast } from "../../hooks/use-toast"
-import { ArrowLeftIcon, CreditCardIcon, CheckIcon } from "lucide-react"
-import type { Transaction } from "../../types"
+import { ArrowLeftIcon, CreditCardIcon, CheckIcon, TagIcon, XIcon } from "lucide-react"
+import type { Voucher } from "../../types"
 
 export default function PaymentPage() {
   const navigate = useNavigate()
@@ -20,10 +21,67 @@ export default function PaymentPage() {
   const { toast } = useToast()
   const [paymentProof, setPaymentProof] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [voucherCode, setVoucherCode] = useState("")
+  const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null)
+  const [discountAmount, setDiscountAmount] = useState(0)
+  const [isValidatingVoucher, setIsValidatingVoucher] = useState(false)
 
   const upgradePrice = 59000 // 59k VND per month
   const yearlyPrice = 599000 // 599k VND per year
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('monthly')
+
+  const currentPrice = selectedPlan === 'monthly' ? upgradePrice : yearlyPrice
+  const finalPrice = Math.max(0, currentPrice - discountAmount)
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng nhập mã voucher",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsValidatingVoucher(true)
+    try {
+      const validation = await FirestoreService.validateVoucher(voucherCode, currentPrice)
+      
+      if (validation.isValid && validation.voucher && validation.discountAmount) {
+        setAppliedVoucher(validation.voucher)
+        setDiscountAmount(validation.discountAmount)
+        toast({
+          title: "Thành công",
+          description: `Áp dụng voucher thành công! Giảm ${validation.discountAmount.toLocaleString('vi-VN')} VNĐ`
+        })
+      } else {
+        toast({
+          title: "Lỗi",
+          description: validation.error || "Mã voucher không hợp lệ",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error("Error validating voucher:", error)
+      toast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi kiểm tra voucher",
+        variant: "destructive"
+      })
+    } finally {
+      setIsValidatingVoucher(false)
+    }
+  }
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null)
+    setDiscountAmount(0)
+    setVoucherCode("")
+    toast({
+      title: "Đã hủy",
+      description: "Voucher đã được gỡ bỏ"
+    })
+  }
 
   const handleSubmitTransaction = async () => {
     if (!paymentProof) {
@@ -46,14 +104,25 @@ export default function PaymentPage() {
 
     setIsSubmitting(true)
     try {
-      await FirestoreService.createTransaction({
+      const transactionData = {
         userId: user.id,
-        type: "upgrade_to_gold",
-        amount: selectedPlan === 'monthly' ? upgradePrice : yearlyPrice,
-        status: "pending",
+        type: "upgrade_to_gold" as const,
+        amount: finalPrice,
+        status: "pending" as const,
         paymentProof: paymentProof,
-        planType: selectedPlan
-      })
+        planType: selectedPlan,
+        originalAmount: currentPrice,
+        discountAmount: discountAmount,
+        voucherCode: appliedVoucher?.code
+      }
+
+      await FirestoreService.createTransaction(transactionData)
+
+      // If voucher was used, record the usage
+      if (appliedVoucher) {
+        // We'll need to get the transaction ID after creation
+        // For now, we'll handle this in the transaction creation
+      }
 
       toast({
         title: "Thành công",
@@ -141,14 +210,82 @@ export default function PaymentPage() {
                 
                 <Separator />
                 
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Giá:</span>
-                  <span className="font-semibold text-lg">
-                    {selectedPlan === 'monthly' 
-                      ? `${upgradePrice.toLocaleString('vi-VN')} VND` 
-                      : `${yearlyPrice.toLocaleString('vi-VN')} VND`
-                    }
-                  </span>
+                {/* Voucher Section */}
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">Mã giảm giá:</Label>
+                  {!appliedVoucher ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Nhập mã voucher"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleApplyVoucher}
+                        disabled={isValidatingVoucher || !voucherCode.trim()}
+                        variant="outline"
+                      >
+                        {isValidatingVoucher ? "Đang kiểm tra..." : "Áp dụng"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TagIcon className="h-4 w-4 text-green-600" />
+                          <span className="font-medium text-green-800">{appliedVoucher.code}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            {appliedVoucher.type === 'percentage' 
+                              ? `${appliedVoucher.value}%` 
+                              : `${appliedVoucher.value.toLocaleString('vi-VN')} VNĐ`
+                            }
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveVoucher}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <XIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="text-sm text-green-700 mt-1">
+                        Giảm {discountAmount.toLocaleString('vi-VN')} VNĐ
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+                
+                {/* Price Summary */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Giá gốc:</span>
+                    <span className="font-medium">
+                      {currentPrice.toLocaleString('vi-VN')} VND
+                    </span>
+                  </div>
+                  
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between items-center text-green-600">
+                      <span>Giảm giá:</span>
+                      <span className="font-medium">
+                        -{discountAmount.toLocaleString('vi-VN')} VND
+                      </span>
+                    </div>
+                  )}
+                  
+                  <Separator />
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-900 font-semibold">Tổng cộng:</span>
+                    <span className="font-bold text-lg text-primary">
+                      {finalPrice.toLocaleString('vi-VN')} VND
+                    </span>
+                  </div>
                 </div>
 
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -168,7 +305,7 @@ export default function PaymentPage() {
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-yellow-900 mb-2">Lưu ý quan trọng:</h4>
                   <ul className="text-sm text-yellow-800 space-y-1">
-                    <li>• Chuyển khoản chính xác số tiền: {selectedPlan === 'monthly' ? upgradePrice.toLocaleString('vi-VN') : yearlyPrice.toLocaleString('vi-VN')} VND</li>
+                    <li>• Chuyển khoản chính xác số tiền: {finalPrice.toLocaleString('vi-VN')} VND</li>
                     <li>• Nội dung chuyển khoản: "UPGRADE {user?.email}"</li>
                     <li>• Sau khi chuyển khoản, hãy upload ảnh chứng minh</li>
                     <li>• Giao dịch sẽ được duyệt trong vòng 24h</li>

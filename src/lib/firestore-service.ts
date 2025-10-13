@@ -12,10 +12,11 @@ import {
   limit,
   serverTimestamp,
   onSnapshot,
-  Unsubscribe
+  Unsubscribe,
+  increment
 } from 'firebase/firestore'
 import { db } from './firebase/config'
-import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, BookingStatus, Transaction, TransactionStatus, ChatMessage } from '../types'
+import type { User, EmotionEntry, DiaryEntry, Booking, Psychologist, AnalyticsData, BookingStatus, Transaction, TransactionStatus, ChatMessage, Voucher, VoucherUsage } from '../types'
 import type { Conversation } from './conversation-service'
 
 export class FirestoreService {
@@ -358,16 +359,18 @@ export class FirestoreService {
     try {
       const q = query(
         collection(db, 'chat_messages'),
-        where('conversationId', '==', conversationId),
-        orderBy('createdAt', 'asc')
+        where('conversationId', '==', conversationId)
       )
 
       const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({
+      const messages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
       })) as ChatMessage[]
+      
+      // Sort by createdAt ascending on client side
+      return messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
     } catch (error) {
       console.error('Error getting chat messages:', error)
       return []
@@ -378,16 +381,18 @@ export class FirestoreService {
     try {
       const q = query(
         collection(db, 'chat_messages'),
-        where('receiverId', '==', psychologistId),
-        orderBy('createdAt', 'desc')
+        where('receiverId', '==', psychologistId)
       )
 
       const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({
+      const messages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
       })) as ChatMessage[]
+      
+      // Sort by createdAt descending on client side
+      return messages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     } catch (error) {
       console.error('Error getting chat messages for psychologist:', error)
       return []
@@ -572,6 +577,15 @@ export class FirestoreService {
         createdAt: now,
         updatedAt: now
       })
+      
+      // If voucher was used, record the usage
+      if (transactionData.voucherCode && transactionData.discountAmount && transactionData.discountAmount > 0) {
+        const voucher = await this.getVoucherByCode(transactionData.voucherCode)
+        if (voucher) {
+          await this.useVoucher(voucher.id, transactionData.userId, transactionRef.id, transactionData.discountAmount)
+        }
+      }
+      
       return transactionRef.id
     } catch (error) {
       console.error('Error creating transaction:', error)
@@ -581,17 +595,20 @@ export class FirestoreService {
 
   static async getTransactions(status?: TransactionStatus): Promise<Transaction[]> {
     try {
-      let q = query(collection(db, 'transactions'), orderBy('createdAt', 'desc'))
+      let q = query(collection(db, 'transactions'))
       
       if (status) {
-        q = query(collection(db, 'transactions'), where('status', '==', status), orderBy('createdAt', 'desc'))
+        q = query(collection(db, 'transactions'), where('status', '==', status))
       }
 
       const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({
+      const transactions = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Transaction))
+      
+      // Sort by createdAt descending on client side
+      return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     } catch (error) {
       console.error('Error getting transactions:', error)
       throw error
@@ -602,14 +619,16 @@ export class FirestoreService {
     try {
       const q = query(
         collection(db, 'transactions'), 
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
       )
       const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({
+      const transactions = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Transaction))
+      
+      // Sort by createdAt descending on client side
+      return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     } catch (error) {
       console.error('Error getting user transactions:', error)
       throw error
@@ -789,6 +808,184 @@ export class FirestoreService {
     } catch (error) {
       console.error('Error deleting conversation:', error)
       throw error
+    }
+  }
+
+  // Voucher operations
+  static async createVoucher(voucherData: Omit<Voucher, 'id' | 'createdAt' | 'updatedAt' | 'usedCount'>): Promise<string> {
+    try {
+      const now = new Date().toISOString()
+      const voucherRef = await addDoc(collection(db, 'vouchers'), {
+        ...voucherData,
+        usedCount: 0,
+        createdAt: now,
+        updatedAt: now
+      })
+      return voucherRef.id
+    } catch (error) {
+      console.error('Error creating voucher:', error)
+      throw error
+    }
+  }
+
+  static async getVouchers(): Promise<Voucher[]> {
+    try {
+      const snapshot = await getDocs(collection(db, 'vouchers'))
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Voucher))
+    } catch (error) {
+      console.error('Error getting vouchers:', error)
+      return []
+    }
+  }
+
+  static async getVoucherByCode(code: string): Promise<Voucher | null> {
+    try {
+      const q = query(
+        collection(db, 'vouchers'),
+        where('code', '==', code.toUpperCase())
+      )
+      const snapshot = await getDocs(q)
+      if (snapshot.empty) return null
+      
+      const doc = snapshot.docs[0]
+      return {
+        id: doc.id,
+        ...doc.data()
+      } as Voucher
+    } catch (error) {
+      console.error('Error getting voucher by code:', error)
+      return null
+    }
+  }
+
+  static async updateVoucher(voucherId: string, updates: Partial<Voucher>): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'vouchers', voucherId), {
+        ...updates,
+        updatedAt: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Error updating voucher:', error)
+      throw error
+    }
+  }
+
+  static async deleteVoucher(voucherId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'vouchers', voucherId))
+    } catch (error) {
+      console.error('Error deleting voucher:', error)
+      throw error
+    }
+  }
+
+  static async validateVoucher(code: string, orderAmount: number): Promise<{
+    isValid: boolean
+    voucher?: Voucher
+    discountAmount?: number
+    error?: string
+  }> {
+    try {
+      const voucher = await this.getVoucherByCode(code)
+      
+      if (!voucher) {
+        return { isValid: false, error: 'Mã voucher không tồn tại' }
+      }
+
+      const now = new Date()
+      const validFrom = new Date(voucher.validFrom)
+      const validTo = new Date(voucher.validTo)
+
+      // Check if voucher is active
+      if (voucher.status !== 'active') {
+        return { isValid: false, error: 'Mã voucher không còn hoạt động' }
+      }
+
+      // Check if voucher is within valid date range
+      if (now < validFrom || now > validTo) {
+        return { isValid: false, error: 'Mã voucher đã hết hạn' }
+      }
+
+      // Check usage limit
+      if (voucher.usageLimit && voucher.usedCount >= voucher.usageLimit) {
+        return { isValid: false, error: 'Mã voucher đã hết lượt sử dụng' }
+      }
+
+      // Check minimum order amount
+      if (voucher.minOrderAmount && orderAmount < voucher.minOrderAmount) {
+        return { isValid: false, error: `Đơn hàng tối thiểu ${voucher.minOrderAmount.toLocaleString('vi-VN')} VNĐ` }
+      }
+
+      // Calculate discount amount
+      let discountAmount = 0
+      if (voucher.type === 'percentage') {
+        discountAmount = (orderAmount * voucher.value) / 100
+        if (voucher.maxDiscountAmount && discountAmount > voucher.maxDiscountAmount) {
+          discountAmount = voucher.maxDiscountAmount
+        }
+      } else {
+        discountAmount = voucher.value
+      }
+
+      // Ensure discount doesn't exceed order amount
+      if (discountAmount > orderAmount) {
+        discountAmount = orderAmount
+      }
+
+      return {
+        isValid: true,
+        voucher,
+        discountAmount: Math.round(discountAmount)
+      }
+    } catch (error) {
+      console.error('Error validating voucher:', error)
+      return { isValid: false, error: 'Lỗi hệ thống khi kiểm tra voucher' }
+    }
+  }
+
+  static async useVoucher(voucherId: string, userId: string, transactionId: string, discountAmount: number): Promise<void> {
+    try {
+      // Update voucher usage count
+      const voucherRef = doc(db, 'vouchers', voucherId)
+      await updateDoc(voucherRef, {
+        usedCount: increment(1),
+        updatedAt: new Date().toISOString()
+      })
+
+      // Record voucher usage
+      await addDoc(collection(db, 'voucher_usage'), {
+        voucherId,
+        userId,
+        transactionId,
+        discountAmount,
+        usedAt: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Error using voucher:', error)
+      throw error
+    }
+  }
+
+  static async getVoucherUsage(voucherId: string): Promise<VoucherUsage[]> {
+    try {
+      const q = query(
+        collection(db, 'voucher_usage'),
+        where('voucherId', '==', voucherId)
+      )
+      const snapshot = await getDocs(q)
+      const usage = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as VoucherUsage))
+      
+      // Sort by usedAt descending on client side
+      return usage.sort((a, b) => new Date(b.usedAt).getTime() - new Date(a.usedAt).getTime())
+    } catch (error) {
+      console.error('Error getting voucher usage:', error)
+      return []
     }
   }
 }
