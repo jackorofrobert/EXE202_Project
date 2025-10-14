@@ -9,13 +9,15 @@ import { Label } from "../../components/ui/label"
 import { Checkbox } from "../../components/ui/checkbox"
 import { FirestoreService } from "../../lib/firestore-service"
 import { useToast } from "../../hooks/use-toast"
-import { EyeIcon, CheckIcon, XIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
-import type { Transaction, TransactionStatus } from "../../types"
+import { EyeIcon, CheckIcon, XIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from "lucide-react"
+import type { Transaction, TransactionStatus, User } from "../../types"
 
 export default function TransactionManagement() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [userMap, setUserMap] = useState<Record<string, User>>({})
   const [adminNotes, setAdminNotes] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("pending")
@@ -28,6 +30,27 @@ export default function TransactionManagement() {
     try {
       const data = await FirestoreService.getTransactions()
       setTransactions(data)
+      
+      // Load user information for all transactions
+      const userIds = [...new Set(data.map(t => t.userId))]
+      const userPromises = userIds.map(async (userId) => {
+        try {
+          const user = await FirestoreService.getUser(userId)
+          return { userId, user }
+        } catch (error) {
+          console.error(`Error loading user ${userId}:`, error)
+          return { userId, user: null }
+        }
+      })
+      
+      const userResults = await Promise.all(userPromises)
+      const userMapData: Record<string, User> = {}
+      userResults.forEach(({ userId, user }) => {
+        if (user) {
+          userMapData[userId] = user
+        }
+      })
+      setUserMap(userMapData)
     } catch (error) {
       console.error("Error loading transactions:", error)
       toast({
@@ -124,6 +147,20 @@ export default function TransactionManagement() {
         ? prev.filter(id => id !== transactionId)
         : [...prev, transactionId]
     )
+  }
+
+  const handleViewTransaction = async (transaction: Transaction) => {
+    setSelectedTransaction(transaction)
+    setAdminNotes(transaction.adminNotes || "")
+    
+    // Load user information
+    try {
+      const user = await FirestoreService.getUser(transaction.userId)
+      setSelectedUser(user)
+    } catch (error) {
+      console.error("Error loading user:", error)
+      setSelectedUser(null)
+    }
   }
 
   const handleSelectAll = () => {
@@ -349,7 +386,7 @@ export default function TransactionManagement() {
                       className={`border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer ${
                         selectedTransactions.includes(transaction.id) ? 'bg-blue-50 border-blue-300' : ''
                       }`}
-                      onClick={() => setSelectedTransaction(transaction)}
+                      onClick={() => handleViewTransaction(transaction)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -360,6 +397,10 @@ export default function TransactionManagement() {
                           />
                           <div>
                             <h3 className="font-semibold">{getTypeText(transaction.type, transaction.planType)}</h3>
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <UserIcon className="h-3 w-3" />
+                              <span>{userMap[transaction.userId]?.name || 'Đang tải...'}</span>
+                            </div>
                             <p className="text-sm text-gray-600">
                               {transaction.amount.toLocaleString('vi-VN')} VND
                               {transaction.originalAmount && transaction.originalAmount !== transaction.amount && (
@@ -443,6 +484,19 @@ export default function TransactionManagement() {
                   <Label className="text-sm font-medium">Loại giao dịch</Label>
                   <p>{getTypeText(selectedTransaction.type, selectedTransaction.planType)}</p>
                 </div>
+
+                {selectedUser && (
+                  <div>
+                    <Label className="text-sm font-medium">Người dùng</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <UserIcon className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <p className="font-medium">{selectedUser.name}</p>
+                        <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label className="text-sm font-medium">Số tiền</Label>

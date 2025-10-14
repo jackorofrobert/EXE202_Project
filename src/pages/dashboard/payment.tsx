@@ -104,16 +104,20 @@ export default function PaymentPage() {
 
     setIsSubmitting(true)
     try {
-      const transactionData = {
+      const transactionData: any = {
         userId: user.id,
         type: "upgrade_to_gold" as const,
         amount: finalPrice,
         status: "pending" as const,
         paymentProof: paymentProof,
         planType: selectedPlan,
-        originalAmount: currentPrice,
-        discountAmount: discountAmount,
-        voucherCode: appliedVoucher?.code
+        originalAmount: currentPrice
+      }
+
+      // Only add voucher-related fields if voucher was applied
+      if (appliedVoucher && discountAmount > 0) {
+        transactionData.discountAmount = discountAmount
+        transactionData.voucherCode = appliedVoucher.code
       }
 
       await FirestoreService.createTransaction(transactionData)

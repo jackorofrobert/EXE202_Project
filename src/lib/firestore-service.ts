@@ -572,11 +572,22 @@ export class FirestoreService {
   static async createTransaction(transactionData: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const now = new Date().toISOString()
-      const transactionRef = await addDoc(collection(db, 'transactions'), {
+      
+      // Clean up undefined values before saving to Firestore
+      const cleanTransactionData = {
         ...transactionData,
         createdAt: now,
         updatedAt: now
+      }
+      
+      // Remove undefined fields
+      Object.keys(cleanTransactionData).forEach(key => {
+        if (cleanTransactionData[key as keyof typeof cleanTransactionData] === undefined) {
+          delete cleanTransactionData[key as keyof typeof cleanTransactionData]
+        }
       })
+      
+      const transactionRef = await addDoc(collection(db, 'transactions'), cleanTransactionData)
       
       // If voucher was used, record the usage
       if (transactionData.voucherCode && transactionData.discountAmount && transactionData.discountAmount > 0) {

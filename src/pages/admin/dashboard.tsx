@@ -171,24 +171,31 @@ export default function AdminDashboard() {
               <p className="text-sm text-muted-foreground">Xin chào, {user?.name}</p>
             </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <UserIcon className="h-4 w-4" />
-                {user?.name}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate("/change-password")}>
-                <LockIcon className="h-4 w-4 mr-2" />
-                Thay đổi mật khẩu
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={logout}>
-                <LogOutIcon className="h-4 w-4 mr-2" />
-                Đăng xuất
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
+                  {user?.name}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate("/change-password")}>
+                  <LockIcon className="h-4 w-4 mr-2" />
+                  Thay đổi mật khẩu
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>
+                  <LogOutIcon className="h-4 w-4 mr-2" />
+                  Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button variant="outline" onClick={logout} className="flex items-center gap-2">
+              <LogOutIcon className="h-4 w-4" />
+              Đăng xuất
+            </Button>
+          </div>
         </div>
       </header>
 

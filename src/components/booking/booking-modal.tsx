@@ -54,6 +54,9 @@ export default function BookingModal({ isOpen, psychologist, onClose, onConfirm 
   const canSelectTimeSlot = (timeSlot: string) => {
     if (isTimeSlotBooked(timeSlot)) return false
     
+    // If this slot is already selected, allow deselecting
+    if (isTimeSlotSelected(timeSlot)) return true
+    
     // If no slots selected, any available slot can be selected
     if (selectedTimeSlots.length === 0) return true
     
@@ -174,8 +177,10 @@ export default function BookingModal({ isOpen, psychologist, onClose, onConfirm 
                           title={
                             isBooked 
                               ? 'Khung giờ đã được đặt' 
-                              : !canSelect && selectedTimeSlots.length > 0
+                              : !canSelect && !isSelected
                               ? 'Chỉ có thể chọn khung giờ liền kề'
+                              : isSelected
+                              ? 'Click để bỏ chọn'
                               : ''
                           }
                         >
