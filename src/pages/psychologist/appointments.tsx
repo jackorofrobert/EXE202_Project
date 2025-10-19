@@ -11,6 +11,7 @@ import { Badge } from "../../components/ui/badge"
 import { Card, CardContent } from "../../components/ui/card"
 import { Calendar } from "../../components/ui/calendar"
 import { useToast } from "../../hooks/use-toast"
+import { canCancelBooking } from "../../lib/booking-utils"
 import { CalendarIcon, ClockIcon, UserIcon, CheckIcon, XIcon, ListIcon, GridIcon } from "lucide-react"
 import type { Booking, BookingStatus, User } from "../../types"
 
@@ -52,7 +53,21 @@ export default function PsychologistAppointments() {
     loadAppointments()
   }, [loadAppointments])
 
+
   const handleStatusChange = async (bookingId: string, newStatus: BookingStatus) => {
+    // Kiểm tra thời gian nếu đang hủy lịch
+    if (newStatus === 'cancelled') {
+      const appointment = appointments.find(a => a.id === bookingId)
+      if (appointment && !canCancelBooking(appointment)) {
+        toast({
+          title: "Không thể hủy lịch",
+          description: "Chỉ có thể hủy lịch hẹn trước ít nhất 2 giờ. Vui lòng liên hệ trực tiếp với bệnh nhân nếu cần hủy gấp.",
+          variant: "destructive"
+        })
+        return
+      }
+    }
+
     try {
       await FirestoreService.updateBookingStatus(bookingId, newStatus)
       toast({
@@ -233,14 +248,20 @@ export default function PsychologistAppointments() {
                         <CheckIcon className="h-4 w-4 mr-1" />
                         Xác nhận
                       </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleStatusChange(appointment.id, 'cancelled')}
-                      >
-                        <XIcon className="h-4 w-4 mr-1" />
-                        Hủy
-                      </Button>
+                      {canCancelBooking(appointment) ? (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleStatusChange(appointment.id, 'cancelled')}
+                        >
+                          <XIcon className="h-4 w-4 mr-1" />
+                          Hủy
+                        </Button>
+                      ) : (
+                        <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          Không thể hủy (còn &lt; 2h)
+                        </div>
+                      )}
                     </>
                   )}
                   

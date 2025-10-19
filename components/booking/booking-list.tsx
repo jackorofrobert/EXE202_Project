@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Clock, MessageCircle, X } from "lucide-react"
+import { canCancelBooking } from "@/lib/booking-utils"
 import type { Booking } from "@/types"
 
 interface BookingListProps {
@@ -34,7 +35,7 @@ export function BookingList({ bookings, onCancel, onChat }: BookingListProps) {
     <div className="space-y-4">
       {bookings.map((booking) => {
         const status = STATUS_CONFIG[booking.status]
-        const canCancel = booking.status === "pending" || booking.status === "confirmed"
+        const canCancel = (booking.status === "pending" || booking.status === "confirmed") && canCancelBooking(booking)
         const canChat = booking.status === "confirmed"
 
         return (
@@ -85,6 +86,11 @@ export function BookingList({ bookings, onCancel, onChat }: BookingListProps) {
                     <X className="mr-2 h-4 w-4" />
                     Hủy lịch
                   </Button>
+                )}
+                {(booking.status === "pending" || booking.status === "confirmed") && !canCancelBooking(booking) && (
+                  <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    Không thể hủy (còn &lt; 2h)
+                  </div>
                 )}
               </div>
             </CardContent>

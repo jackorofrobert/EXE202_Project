@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "../../contexts/auth-context"
 import { FirestoreService } from "../../lib/firestore-service"
 import { useToast } from "../../hooks/use-toast"
+import { canCancelBooking } from "../../lib/booking-utils"
 import type { Psychologist, Booking } from "../../types"
 import PsychologistCard from "../../components/booking/psychologist-card"
 import BookingModal from "../../components/booking/booking-modal"
@@ -126,7 +127,21 @@ export default function BookingPage() {
     }
   }
 
+
   const handleCancelBooking = async (bookingId: string) => {
+    const booking = bookings.find(b => b.id === bookingId)
+    if (!booking) return
+
+    // Kiểm tra thời gian trước khi hủy
+    if (!canCancelBooking(booking)) {
+      toast({
+        title: "Không thể hủy lịch",
+        description: "Bạn chỉ có thể hủy lịch hẹn trước ít nhất 2 giờ. Vui lòng liên hệ trực tiếp với bác sĩ nếu cần hủy gấp.",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       await FirestoreService.updateBookingStatus(bookingId, "cancelled")
       setBookings(bookings.filter(b => b.id !== bookingId))
@@ -255,7 +270,7 @@ export default function BookingPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           {getStatusBadge(booking.status)}
-                          {booking.status === "pending" && (
+                          {booking.status === "pending" && canCancelBooking(booking) && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -264,6 +279,11 @@ export default function BookingPage() {
                             >
                               Hủy lịch
                             </Button>
+                          )}
+                          {booking.status === "pending" && !canCancelBooking(booking) && (
+                            <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                              Không thể hủy (còn &lt; 2h)
+                            </div>
                           )}
                           {booking.status === "completed" && !booking.rating && (
                             <Button
