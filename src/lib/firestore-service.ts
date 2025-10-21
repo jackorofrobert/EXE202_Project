@@ -339,6 +339,90 @@ export class FirestoreService {
     }
   }
 
+  // Get user growth data by month
+  static async getUserGrowthData(): Promise<{ date: string; users: number }[]> {
+    try {
+      const usersSnapshot = await getDocs(collection(db, 'users'))
+      const users = usersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as User[]
+
+      // Group users by month
+      const monthlyData: { [key: string]: number } = {}
+      
+      users.forEach(user => {
+        const createdAt = new Date(user.createdAt)
+        const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = 0
+        }
+        monthlyData[monthKey]++
+      })
+
+      // Convert to array and sort by date
+      const result = Object.entries(monthlyData)
+        .map(([date, users]) => ({ date, users }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+
+      // Fill in missing months with 0
+      const startDate = new Date('2024-01-01')
+      const endDate = new Date()
+      const filledData: { date: string; users: number }[] = []
+      
+      for (let d = new Date(startDate); d <= endDate; d.setMonth(d.getMonth() + 1)) {
+        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        const existingData = result.find(item => item.date === monthKey)
+        filledData.push({
+          date: monthKey,
+          users: existingData ? existingData.users : 0
+        })
+      }
+
+      return filledData.slice(-6) // Return last 6 months
+    } catch (error) {
+      console.error('Error getting user growth data:', error)
+      return []
+    }
+  }
+
+  // Get booking statistics by month
+  static async getBookingStatsData(): Promise<{ month: string; bookings: number }[]> {
+    try {
+      const bookingsSnapshot = await getDocs(collection(db, 'bookings'))
+      const bookings = bookingsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Booking[]
+
+      // Group bookings by month
+      const monthlyData: { [key: string]: number } = {}
+      
+      bookings.forEach(booking => {
+        const createdAt = new Date(booking.createdAt)
+        const monthKey = createdAt.toLocaleDateString('en-US', { month: 'short' })
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = 0
+        }
+        monthlyData[monthKey]++
+      })
+
+      // Convert to array and sort by month order
+      const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      const result = monthOrder.map(month => ({
+        month,
+        bookings: monthlyData[month] || 0
+      }))
+
+      return result.slice(-6) // Return last 6 months
+    } catch (error) {
+      console.error('Error getting booking stats data:', error)
+      return []
+    }
+  }
+
   // Chat operations
   static async addChatMessage(conversationId: string, messageData: Omit<ChatMessage, 'id' | 'createdAt'>): Promise<string> {
     try {

@@ -31,6 +31,8 @@ export default function AdminDashboard() {
     psychologistGrowth: number
     bookingGrowth: number
   } | null>(null)
+  const [userGrowthData, setUserGrowthData] = useState<{ date: string; users: number }[]>([])
+  const [bookingStatsData, setBookingStatsData] = useState<{ month: string; bookings: number }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'psychologists' | 'transactions' | 'vouchers' | 'ratings'>('overview')
   
@@ -47,17 +49,23 @@ export default function AdminDashboard() {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [analyticsData, usersData, psychologistsData, trendsData] = await Promise.all([
+      const [analyticsData, usersData, psychologistsData, trendsData, userGrowthData, bookingStatsData] = await Promise.all([
         FirestoreService.getAdminAnalytics(),
         FirestoreService.getAllUsers(),
         FirestoreService.getPsychologists(),
-        FirestoreService.getAnalyticsTrends()
+        FirestoreService.getAnalyticsTrends(),
+        FirestoreService.getUserGrowthData(),
+        FirestoreService.getBookingStatsData()
       ])
       
       setAnalytics(analyticsData)
       setAllUsers(usersData)
       setPsychologists(psychologistsData)
       setTrends(trendsData)
+      
+      // Store real data for charts
+      setUserGrowthData(userGrowthData)
+      setBookingStatsData(bookingStatsData)
     } catch (error) {
       console.error("Error loading data:", error)
     } finally {
@@ -65,51 +73,6 @@ export default function AdminDashboard() {
     }
   }
 
-  const calculateUserGrowth = () => {
-    if (!analytics) return []
-    
-    // Use real data from Firestore
-    const currentUsers = analytics.totalUsers
-    
-    // If we have very few users, show empty chart
-    if (currentUsers < 2) {
-      return []
-    }
-    
-    // Create simple growth pattern based on actual data
-    const baseUsers = Math.max(1, Math.floor(currentUsers * 0.1))
-    return [
-      { date: '2024-01', users: baseUsers },
-      { date: '2024-02', users: Math.floor(baseUsers * 1.5) },
-      { date: '2024-03', users: Math.floor(baseUsers * 2) },
-      { date: '2024-04', users: Math.floor(baseUsers * 2.5) },
-      { date: '2024-05', users: Math.floor(baseUsers * 3) },
-      { date: '2024-06', users: currentUsers }
-    ]
-  }
-
-  const calculateBookingGrowth = () => {
-    if (!analytics) return []
-    
-    // Use real data from Firestore
-    const currentBookings = analytics.totalBookings
-    
-    // If we have very few bookings, show empty chart
-    if (currentBookings < 2) {
-      return []
-    }
-    
-    // Create simple pattern based on actual data
-    const baseBookings = Math.max(1, Math.floor(currentBookings * 0.2))
-    return [
-      { month: 'Jan', bookings: baseBookings },
-      { month: 'Feb', bookings: Math.floor(baseBookings * 1.3) },
-      { month: 'Mar', bookings: Math.floor(baseBookings * 1.6) },
-      { month: 'Apr', bookings: Math.floor(baseBookings * 1.9) },
-      { month: 'May', bookings: Math.floor(baseBookings * 2.2) },
-      { month: 'Jun', bookings: currentBookings }
-    ]
-  }
 
   if (isLoading) {
     return (
@@ -132,8 +95,6 @@ export default function AdminDashboard() {
     )
   }
 
-  const userGrowthData = calculateUserGrowth()
-  const bookingStatsData = calculateBookingGrowth()
 
   // Modal handlers
   const handleEditUser = (user: User) => {

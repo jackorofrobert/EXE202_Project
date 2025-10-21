@@ -1,3 +1,10 @@
+"use client"
+
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js'
+import { Bar } from 'react-chartjs-2'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+
 interface BookingStatsChartProps {
   data: { month: string; bookings: number }[]
 }
@@ -12,22 +19,79 @@ export default function BookingStatsChart({ data }: BookingStatsChartProps) {
     )
   }
 
-  const maxBookings = Math.max(...data.map((d) => d.bookings))
+  const chartData = {
+    labels: data.map(d => d.month),
+    datasets: [
+      {
+        label: 'Lịch hẹn',
+        data: data.map(d => d.bookings),
+        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+        borderColor: 'rgb(99, 102, 241)',
+        borderWidth: 1,
+        borderRadius: 4,
+        borderSkipped: false,
+      },
+    ],
+  }
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: 'rgb(99, 102, 241)',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: false,
+        callbacks: {
+          title: function(context: any) {
+            return `Tháng: ${context[0].label}`
+          },
+          label: function(context: any) {
+            return `Lịch hẹn: ${context.parsed.y}`
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+          drawBorder: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          }
+        }
+      },
+    },
+  }
 
   return (
     <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
       <h3 className="text-lg font-semibold mb-6">Thống kê đặt lịch</h3>
-      <div className="flex items-end justify-between gap-4 h-48">
-        {data.map((d) => {
-          const height = maxBookings > 0 ? (d.bookings / maxBookings) * 100 : 0
-          return (
-            <div key={d.month} className="flex-1 flex flex-col items-center gap-2">
-              <div className="text-sm font-medium">{d.bookings}</div>
-              <div className="w-full bg-primary rounded-t" style={{ height: `${height}%` }} />
-              <div className="text-xs text-muted-foreground">{d.month}</div>
-            </div>
-          )
-        })}
+      <div className="h-[300px]">
+        <Bar data={chartData} options={options} />
       </div>
     </div>
   )

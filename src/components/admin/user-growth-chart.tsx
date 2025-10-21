@@ -1,3 +1,10 @@
+"use client"
+
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js'
+import { Line } from 'react-chartjs-2'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+
 interface UserGrowthChartProps {
   data: { date: string; users: number }[]
 }
@@ -12,42 +19,89 @@ export default function UserGrowthChart({ data }: UserGrowthChartProps) {
     )
   }
 
-  const maxUsers = Math.max(...data.map((d) => d.users))
-  const chartHeight = 200
-  const dataLength = data.length
-  const stepX = dataLength > 1 ? 100 / (dataLength - 1) : 0
+  const chartData = {
+    labels: data.map(d => d.date),
+    datasets: [
+      {
+        label: 'Người dùng',
+        data: data.map(d => d.users),
+        borderColor: 'rgb(99, 102, 241)',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        borderWidth: 3,
+        pointBackgroundColor: 'rgb(99, 102, 241)',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        fill: true,
+        tension: 0.4,
+      },
+    ],
+  }
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: 'rgb(99, 102, 241)',
+        borderWidth: 1,
+        cornerRadius: 8,
+        displayColors: false,
+        callbacks: {
+          title: function(context: any) {
+            return `Tháng: ${context[0].label}`
+          },
+          label: function(context: any) {
+            return `Người dùng: ${context.parsed.y}`
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+          drawBorder: false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          }
+        }
+      },
+    },
+    elements: {
+      point: {
+        hoverBackgroundColor: 'rgb(99, 102, 241)',
+      },
+    },
+  }
 
   return (
     <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
       <h3 className="text-lg font-semibold mb-6">Tăng trưởng người dùng</h3>
-      <div className="relative" style={{ height: chartHeight }}>
-        <svg width="100%" height={chartHeight} className="overflow-visible">
-          <polyline
-            fill="none"
-            stroke="#6366f1"
-            strokeWidth="2"
-            points={data
-              .map((d, i) => {
-                const x = i * stepX
-                const y = chartHeight - (d.users / maxUsers) * (chartHeight - 40)
-                return `${x}%,${y}`
-              })
-              .join(" ")}
-          />
-          {data.map((d, i) => {
-            const x = i * stepX
-            const y = chartHeight - (d.users / maxUsers) * (chartHeight - 40)
-            return <circle key={i} cx={`${x}%`} cy={y} r="4" fill="#6366f1" />
-          })}
-        </svg>
-      </div>
-      <div className="flex justify-between mt-4">
-        {data.map((d) => (
-          <div key={d.date} className="text-center">
-            <div className="text-xs text-muted-foreground">{d.date}</div>
-            <div className="text-sm font-medium">{d.users}</div>
-          </div>
-        ))}
+      <div className="h-[300px]">
+        <Line data={chartData} options={options} />
       </div>
     </div>
   )
