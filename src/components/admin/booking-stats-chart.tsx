@@ -10,6 +10,8 @@ interface BookingStatsChartProps {
 }
 
 export default function BookingStatsChart({ data }: BookingStatsChartProps) {
+  console.log('BookingStatsChart received data:', data)
+  
   if (!data || data.length === 0) {
     return (
       <div className="bg-card rounded-lg p-6 shadow-sm border border-border">

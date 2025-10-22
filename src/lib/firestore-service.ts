@@ -396,6 +396,9 @@ export class FirestoreService {
         ...doc.data()
       })) as Booking[]
 
+      console.log('Total bookings found:', bookings.length)
+      console.log('Sample booking:', bookings[0])
+
       // Group bookings by month
       const monthlyData: { [key: string]: number } = {}
       
@@ -409,14 +412,23 @@ export class FirestoreService {
         monthlyData[monthKey]++
       })
 
-      // Convert to array and sort by month order
-      const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      const result = monthOrder.map(month => ({
-        month,
-        bookings: monthlyData[month] || 0
-      }))
+      console.log('Monthly data:', monthlyData)
 
-      return result.slice(-6) // Return last 6 months
+      // Get current date and calculate last 6 months
+      const now = new Date()
+      const result: { month: string; bookings: number }[] = []
+      
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const monthKey = date.toLocaleDateString('en-US', { month: 'short' })
+        result.push({
+          month: monthKey,
+          bookings: monthlyData[monthKey] || 0
+        })
+      }
+
+      console.log('Final result:', result)
+      return result
     } catch (error) {
       console.error('Error getting booking stats data:', error)
       return []
