@@ -403,7 +403,19 @@ export class FirestoreService {
       const monthlyData: { [key: string]: number } = {}
       
       bookings.forEach(booking => {
-        const createdAt = new Date(booking.createdAt)
+        // Handle Firestore Timestamp
+        let createdAt: Date
+        if (booking.createdAt && typeof booking.createdAt === 'object' && 'toDate' in booking.createdAt) {
+          // Firestore Timestamp
+          createdAt = (booking.createdAt as any).toDate()
+        } else if (typeof booking.createdAt === 'string') {
+          // String date
+          createdAt = new Date(booking.createdAt)
+        } else {
+          // Fallback to current date
+          createdAt = new Date()
+        }
+        
         const monthKey = createdAt.toLocaleDateString('en-US', { month: 'short' })
         
         if (!monthlyData[monthKey]) {
