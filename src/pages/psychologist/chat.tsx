@@ -184,11 +184,6 @@ export default function PsychologistChatPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium text-sm truncate">{session.userName}</h4>
-                        {session.unreadCount > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {session.unreadCount}
-                          </Badge>
-                        )}
                       </div>
                       {session.lastMessage && (
                         <p className="text-xs text-gray-500 truncate mt-1">
