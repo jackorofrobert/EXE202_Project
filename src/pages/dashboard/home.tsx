@@ -10,6 +10,7 @@ import EmotionStatsChart from "../../components/user/emotion-stats-chart";
 import SidebarNav from "../../components/user/sidebar-nav";
 import QuickStats from "../../components/user/quick-stats";
 import RecentEmotions from "../../components/user/recent-emotions";
+import HelpDialog from "../../components/user/help-dialog";
 import ChatbotPage from "./chatbot";
 import BookingPage from "./booking";
 import DiaryPage from "./diary";
@@ -248,7 +249,10 @@ export default function UserDashboard() {
       <aside className="w-64 bg-card border-r border-border flex flex-col">
         <div className="flex-1 p-4">
           <SidebarNav />
-          <div className="mt-4">
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-center">
+              <HelpDialog />
+            </div>
             <button
               onClick={logout}
               className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"

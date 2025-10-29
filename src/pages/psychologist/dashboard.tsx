@@ -7,6 +7,7 @@ import PsychologistAppointments from "./appointments"
 import PsychologistChatPage from "./chat"
 import PsychologistProfile from "./profile"
 import PsychologistRatingsPage from "./ratings"
+import PsychologistHelpDialog from "../../components/psychologist/help-dialog"
 
 export default function PsychologistDashboard() {
   const { logout } = useAuth()
@@ -48,7 +49,10 @@ export default function PsychologistDashboard() {
             })}
           </nav>
           
-          <div className="mt-4">
+          <div className="mt-4 space-y-2">
+            <div className="flex justify-center">
+              <PsychologistHelpDialog />
+            </div>
             <button
               onClick={logout}
               className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
