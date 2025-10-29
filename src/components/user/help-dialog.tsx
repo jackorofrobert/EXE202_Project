@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { Badge } from "../ui/badge"
 
-export default function HelpDialog() {
+export default function HelpDialog({ variant = "icon" }: { variant?: "icon" | "full" }) {
   const [open, setOpen] = useState(false)
   const { user } = useAuth()
   const isGoldUser = user?.tier === "gold"
@@ -173,10 +173,17 @@ export default function HelpDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <HelpCircle className="h-5 w-5" />
-          <span className="sr-only">Trợ giúp</span>
-        </Button>
+        {variant === "icon" ? (
+          <Button variant="ghost" size="icon" className="relative">
+            <HelpCircle className="h-5 w-5" />
+            <span className="sr-only">Trợ giúp</span>
+          </Button>
+        ) : (
+          <Button variant="secondary" className="w-full justify-center">
+            <HelpCircle className="h-4 w-4 mr-2" />
+            Trợ giúp
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>

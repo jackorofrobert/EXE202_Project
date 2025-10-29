@@ -250,9 +250,7 @@ export default function UserDashboard() {
         <div className="flex-1 p-4">
           <SidebarNav />
           <div className="mt-4 space-y-2">
-            <div className="flex justify-center">
-              <HelpDialog />
-            </div>
+            <HelpDialog variant="full" />
             <button
               onClick={logout}
               className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"

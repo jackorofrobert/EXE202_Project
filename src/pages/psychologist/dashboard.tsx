@@ -50,9 +50,7 @@ export default function PsychologistDashboard() {
           </nav>
           
           <div className="mt-4 space-y-2">
-            <div className="flex justify-center">
-              <PsychologistHelpDialog />
-            </div>
+            <PsychologistHelpDialog variant="full" />
             <button
               onClick={logout}
               className="w-full px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity"
