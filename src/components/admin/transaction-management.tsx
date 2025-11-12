@@ -156,6 +156,7 @@ export default function TransactionManagement() {
   const handleViewTransaction = async (transaction: Transaction) => {
     // Reset image loaded state first
     setImageLoaded(false)
+    setShouldShowImage(false)
     setSelectedTransaction(transaction)
     setAdminNotes(transaction.adminNotes || "")
     
