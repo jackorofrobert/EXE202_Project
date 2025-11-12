@@ -21,7 +21,7 @@ export default function TransactionManagement() {
   const [userMap, setUserMap] = useState<Record<string, User>>({})
   const [adminNotes, setAdminNotes] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [loadingDetail, setLoadingDetail] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("pending")
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -154,8 +154,7 @@ export default function TransactionManagement() {
   const handleViewTransaction = async (transaction: Transaction) => {
     setSelectedTransaction(transaction)
     setAdminNotes(transaction.adminNotes || "")
-    setLoadingDetail(true)
-    setSelectedUser(null)
+    setImageLoaded(false)
     
     // Load user information
     try {
@@ -164,9 +163,16 @@ export default function TransactionManagement() {
     } catch (error) {
       console.error("Error loading user:", error)
       setSelectedUser(null)
-    } finally {
-      setLoadingDetail(false)
     }
+  }
+  
+  const handleImageLoad = () => {
+    setImageLoaded(true)
+  }
+  
+  const handleImageError = () => {
+    // Even if image fails to load, we should stop showing loading
+    setImageLoaded(true)
   }
 
   const handleSelectAll = () => {
@@ -486,30 +492,23 @@ export default function TransactionManagement() {
                 <CardTitle>Chi tiết giao dịch</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {loadingDetail ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Spinner className="h-8 w-8 text-primary mb-4" />
-                    <p className="text-sm text-muted-foreground">Đang tải chi tiết...</p>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <Label className="text-sm font-medium">Loại giao dịch</Label>
-                      <p>{getTypeText(selectedTransaction.type, selectedTransaction.planType)}</p>
-                    </div>
+                <div>
+                  <Label className="text-sm font-medium">Loại giao dịch</Label>
+                  <p>{getTypeText(selectedTransaction.type, selectedTransaction.planType)}</p>
+                </div>
 
-                    {selectedUser && (
+                {selectedUser && (
+                  <div>
+                    <Label className="text-sm font-medium">Người dùng</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <UserIcon className="h-4 w-4 text-gray-500" />
                       <div>
-                        <Label className="text-sm font-medium">Người dùng</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <UserIcon className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="font-medium">{selectedUser.name}</p>
-                            <p className="text-sm text-gray-600">{selectedUser.email}</p>
-                          </div>
-                        </div>
+                        <p className="font-medium">{selectedUser.name}</p>
+                        <p className="text-sm text-gray-600">{selectedUser.email}</p>
                       </div>
-                    )}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label className="text-sm font-medium">Số tiền</Label>
@@ -549,10 +548,20 @@ export default function TransactionManagement() {
                   <div>
                     <Label className="text-sm font-medium">Ảnh chứng minh</Label>
                     <div className="mt-2">
+                      {!imageLoaded && (
+                        <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-lg border">
+                          <div className="text-center">
+                            <Spinner className="h-6 w-6 text-primary mx-auto mb-2" />
+                            <p className="text-xs text-muted-foreground">Đang tải ảnh...</p>
+                          </div>
+                        </div>
+                      )}
                       <img
                         src={selectedTransaction.paymentProof}
                         alt="Payment proof"
-                        className="w-full h-48 object-cover rounded-lg border"
+                        className={`w-full h-48 object-cover rounded-lg border ${!imageLoaded ? 'hidden' : ''}`}
+                        onLoad={handleImageLoad}
+                        onError={handleImageError}
                       />
                     </div>
                   </div>
@@ -598,8 +607,6 @@ export default function TransactionManagement() {
                       </Button>
                     </div>
                   </div>
-                )}
-                  </>
                 )}
               </CardContent>
             </Card>
