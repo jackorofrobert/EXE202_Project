@@ -11,6 +11,7 @@ import { FirestoreService } from "../../lib/firestore-service"
 import { useToast } from "../../hooks/use-toast"
 import { EyeIcon, CheckIcon, XIcon, ClockIcon, ChevronLeftIcon, ChevronRightIcon, UserIcon } from "lucide-react"
 import type { Transaction, TransactionStatus, User } from "../../types"
+import { Spinner } from "../../components/ui/spinner"
 
 export default function TransactionManagement() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -20,6 +21,7 @@ export default function TransactionManagement() {
   const [userMap, setUserMap] = useState<Record<string, User>>({})
   const [adminNotes, setAdminNotes] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [loadingDetail, setLoadingDetail] = useState(false)
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("pending")
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -152,6 +154,8 @@ export default function TransactionManagement() {
   const handleViewTransaction = async (transaction: Transaction) => {
     setSelectedTransaction(transaction)
     setAdminNotes(transaction.adminNotes || "")
+    setLoadingDetail(true)
+    setSelectedUser(null)
     
     // Load user information
     try {
@@ -160,6 +164,8 @@ export default function TransactionManagement() {
     } catch (error) {
       console.error("Error loading user:", error)
       setSelectedUser(null)
+    } finally {
+      setLoadingDetail(false)
     }
   }
 
@@ -480,23 +486,30 @@ export default function TransactionManagement() {
                 <CardTitle>Chi tiết giao dịch</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">Loại giao dịch</Label>
-                  <p>{getTypeText(selectedTransaction.type, selectedTransaction.planType)}</p>
-                </div>
-
-                {selectedUser && (
-                  <div>
-                    <Label className="text-sm font-medium">Người dùng</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <UserIcon className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="font-medium">{selectedUser.name}</p>
-                        <p className="text-sm text-gray-600">{selectedUser.email}</p>
-                      </div>
-                    </div>
+                {loadingDetail ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Spinner className="h-8 w-8 text-primary mb-4" />
+                    <p className="text-sm text-muted-foreground">Đang tải chi tiết...</p>
                   </div>
-                )}
+                ) : (
+                  <>
+                    <div>
+                      <Label className="text-sm font-medium">Loại giao dịch</Label>
+                      <p>{getTypeText(selectedTransaction.type, selectedTransaction.planType)}</p>
+                    </div>
+
+                    {selectedUser && (
+                      <div>
+                        <Label className="text-sm font-medium">Người dùng</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <UserIcon className="h-4 w-4 text-gray-500" />
+                          <div>
+                            <p className="font-medium">{selectedUser.name}</p>
+                            <p className="text-sm text-gray-600">{selectedUser.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                 <div>
                   <Label className="text-sm font-medium">Số tiền</Label>
@@ -585,6 +598,8 @@ export default function TransactionManagement() {
                       </Button>
                     </div>
                   </div>
+                )}
+                  </>
                 )}
               </CardContent>
             </Card>
