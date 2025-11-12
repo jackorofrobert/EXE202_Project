@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
@@ -22,6 +22,8 @@ export default function TransactionManagement() {
   const [adminNotes, setAdminNotes] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
+  const [shouldShowImage, setShouldShowImage] = useState(false)
+  const currentImageSrc = useRef<string | null>(null)
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("pending")
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -152,9 +154,13 @@ export default function TransactionManagement() {
   }
 
   const handleViewTransaction = async (transaction: Transaction) => {
+    // Reset image loaded state first
+    setImageLoaded(false)
     setSelectedTransaction(transaction)
     setAdminNotes(transaction.adminNotes || "")
-    setImageLoaded(false)
+    
+    // Update current image src ref
+    currentImageSrc.current = transaction.paymentProof || null
     
     // Load user information
     try {
@@ -166,13 +172,42 @@ export default function TransactionManagement() {
     }
   }
   
+  // Reset image loaded when transaction changes
+  useEffect(() => {
+    if (selectedTransaction) {
+      setImageLoaded(false)
+      setShouldShowImage(false)
+      currentImageSrc.current = selectedTransaction.paymentProof || null
+      
+      // Delay showing image element to ensure loading state is visible first
+      if (selectedTransaction.paymentProof) {
+        const timer = setTimeout(() => {
+          setShouldShowImage(true)
+        }, 50) // Small delay to ensure loading UI renders first
+        
+        return () => clearTimeout(timer)
+      } else {
+        setShouldShowImage(false)
+      }
+    } else {
+      setImageLoaded(false)
+      setShouldShowImage(false)
+      currentImageSrc.current = null
+    }
+  }, [selectedTransaction?.id, selectedTransaction?.paymentProof])
+  
   const handleImageLoad = () => {
-    setImageLoaded(true)
+    // Only set loaded if this is still the current image
+    if (selectedTransaction?.paymentProof === currentImageSrc.current) {
+      setImageLoaded(true)
+    }
   }
   
   const handleImageError = () => {
     // Even if image fails to load, we should stop showing loading
-    setImageLoaded(true)
+    if (selectedTransaction?.paymentProof === currentImageSrc.current) {
+      setImageLoaded(true)
+    }
   }
 
   const handleSelectAll = () => {
@@ -547,22 +582,25 @@ export default function TransactionManagement() {
                 {selectedTransaction.paymentProof && (
                   <div>
                     <Label className="text-sm font-medium">Ảnh chứng minh</Label>
-                    <div className="mt-2">
+                    <div className="mt-2 relative min-h-[192px]">
                       {!imageLoaded && (
-                        <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-lg border">
+                        <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-lg border absolute inset-0 z-10">
                           <div className="text-center">
                             <Spinner className="h-6 w-6 text-primary mx-auto mb-2" />
                             <p className="text-xs text-muted-foreground">Đang tải ảnh...</p>
                           </div>
                         </div>
                       )}
-                      <img
-                        src={selectedTransaction.paymentProof}
-                        alt="Payment proof"
-                        className={`w-full h-48 object-cover rounded-lg border ${!imageLoaded ? 'hidden' : ''}`}
-                        onLoad={handleImageLoad}
-                        onError={handleImageError}
-                      />
+                      {selectedTransaction.paymentProof && shouldShowImage && (
+                        <img
+                          key={`img-${selectedTransaction.id}`}
+                          src={selectedTransaction.paymentProof}
+                          alt="Payment proof"
+                          className={`w-full h-48 object-cover rounded-lg border ${!imageLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}
+                          onLoad={handleImageLoad}
+                          onError={handleImageError}
+                        />
+                      )}
                     </div>
                   </div>
                 )}
