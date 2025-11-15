@@ -23,7 +23,8 @@ export default function TransactionManagement() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const [shouldShowImage, setShouldShowImage] = useState(false)
-  const currentImageSrc = useRef<string | null>(null)
+  const [currentImageSrc, setCurrentImageSrc] = useState<string | null>(null)
+  const currentImageSrcRef = useRef<string | null>(null)
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("pending")
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -160,8 +161,10 @@ export default function TransactionManagement() {
     setSelectedTransaction(transaction)
     setAdminNotes(transaction.adminNotes || "")
     
-    // Update current image src ref
-    currentImageSrc.current = transaction.paymentProof || null
+    // Update current image src
+    const imageSrc = transaction.paymentProof || null
+    setCurrentImageSrc(imageSrc)
+    currentImageSrcRef.current = imageSrc
     
     // Load user information
     try {
@@ -172,13 +175,16 @@ export default function TransactionManagement() {
       setSelectedUser(null)
     }
   }
+
   
   // Reset image loaded when transaction changes
   useEffect(() => {
     if (selectedTransaction) {
       setImageLoaded(false)
       setShouldShowImage(false)
-      currentImageSrc.current = selectedTransaction.paymentProof || null
+      const imageSrc = selectedTransaction.paymentProof || null
+      setCurrentImageSrc(imageSrc)
+      currentImageSrcRef.current = imageSrc
       
       // Delay showing image element to ensure loading state is visible first
       if (selectedTransaction.paymentProof) {
@@ -193,20 +199,21 @@ export default function TransactionManagement() {
     } else {
       setImageLoaded(false)
       setShouldShowImage(false)
-      currentImageSrc.current = null
+      setCurrentImageSrc(null)
+      currentImageSrcRef.current = null
     }
   }, [selectedTransaction?.id, selectedTransaction?.paymentProof])
   
   const handleImageLoad = () => {
     // Only set loaded if this is still the current image
-    if (selectedTransaction?.paymentProof === currentImageSrc.current) {
+    if (currentImageSrc && currentImageSrc === currentImageSrcRef.current) {
       setImageLoaded(true)
     }
   }
   
   const handleImageError = () => {
     // Even if image fails to load, we should stop showing loading
-    if (selectedTransaction?.paymentProof === currentImageSrc.current) {
+    if (currentImageSrc && currentImageSrc === currentImageSrcRef.current) {
       setImageLoaded(true)
     }
   }
@@ -474,7 +481,7 @@ export default function TransactionManagement() {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation()
-                              setSelectedTransaction(transaction)
+                              handleViewTransaction(transaction)
                             }}
                           >
                             <EyeIcon className="h-4 w-4" />
@@ -580,7 +587,7 @@ export default function TransactionManagement() {
                   <p>{new Date(selectedTransaction.createdAt).toLocaleString('vi-VN')}</p>
                 </div>
 
-                {selectedTransaction.paymentProof && (
+                {currentImageSrc && (
                   <div>
                     <Label className="text-sm font-medium">Ảnh chứng minh</Label>
                     <div className="mt-2 relative min-h-[192px]">
@@ -592,10 +599,10 @@ export default function TransactionManagement() {
                           </div>
                         </div>
                       )}
-                      {selectedTransaction.paymentProof && shouldShowImage && (
+                      {currentImageSrc && shouldShowImage && (
                         <img
-                          key={`img-${selectedTransaction.id}`}
-                          src={selectedTransaction.paymentProof}
+                          key={`img-${selectedTransaction?.id}-${currentImageSrc}`}
+                          src={currentImageSrc}
                           alt="Payment proof"
                           className={`w-full h-48 object-cover rounded-lg border ${!imageLoaded ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}
                           onLoad={handleImageLoad}
