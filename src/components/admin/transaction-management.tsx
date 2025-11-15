@@ -25,6 +25,7 @@ export default function TransactionManagement() {
   const [shouldShowImage, setShouldShowImage] = useState(false)
   const [currentImageSrc, setCurrentImageSrc] = useState<string | null>(null)
   const currentImageSrcRef = useRef<string | null>(null)
+  const currentTransactionIdRef = useRef<string | null>(null)
   const [activeTab, setActiveTab] = useState<TransactionStatus | "all">("pending")
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -155,9 +156,16 @@ export default function TransactionManagement() {
   }
 
   const handleViewTransaction = async (transaction: Transaction) => {
+    const transactionId = transaction.id
+    
+    // Track current transaction
+    currentTransactionIdRef.current = transactionId
+    
     // Reset image loaded state first
     setImageLoaded(false)
     setShouldShowImage(false)
+    
+    // Set transaction first
     setSelectedTransaction(transaction)
     setAdminNotes(transaction.adminNotes || "")
     
@@ -166,13 +174,27 @@ export default function TransactionManagement() {
     setCurrentImageSrc(imageSrc)
     currentImageSrcRef.current = imageSrc
     
-    // Load user information
-    try {
-      const user = await FirestoreService.getUser(transaction.userId)
-      setSelectedUser(user)
-    } catch (error) {
-      console.error("Error loading user:", error)
+    // Check if user is already in userMap first
+    const existingUser = userMap[transaction.userId]
+    if (existingUser) {
+      setSelectedUser(existingUser)
+    } else {
+      // If not in map, set to null first
       setSelectedUser(null)
+      
+      // Load user information
+      try {
+        const user = await FirestoreService.getUser(transaction.userId)
+        // Only set user if this is still the current transaction
+        if (currentTransactionIdRef.current === transactionId) {
+          setSelectedUser(user)
+        }
+      } catch (error) {
+        console.error("Error loading user:", error)
+        if (currentTransactionIdRef.current === transactionId) {
+          setSelectedUser(null)
+        }
+      }
     }
   }
 
